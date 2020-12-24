@@ -10,6 +10,7 @@ defmodule CatFeeder.MixProject do
       app: @app,
       version: @version,
       elixir: "~> 1.9",
+      elixirc_paths: elixirc_paths(Mix.env()),
       archives: [nerves_bootstrap: "~> 1.10"],
       start_permanent: Mix.env() == :prod,
       build_embedded: true,
@@ -18,6 +19,10 @@ defmodule CatFeeder.MixProject do
       preferred_cli_target: [run: :host, test: :host]
     ]
   end
+
+  # Specifies which paths to compile per environment.
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 
   # Run "mix help compile.app" to learn about applications.
   def application do
@@ -55,7 +60,8 @@ defmodule CatFeeder.MixProject do
       {:circuits_i2c, "~> 0.1"},
 
       # Dev and Test Deps
-      {:mix_test_watch, "~> 1.0", only: :dev, runtime: false}
+      {:mix_test_watch, "~> 1.0", only: :dev, runtime: false},
+      {:hammox, "~> 0.3", only: :test}
     ]
   end
 

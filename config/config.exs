@@ -31,3 +31,9 @@ if Mix.target() == :host or Mix.target() == :"" do
 else
   import_config "target.exs"
 end
+
+if Mix.env() == :test do
+  config :logger,
+    backends: [:console],
+    level: :info
+end
