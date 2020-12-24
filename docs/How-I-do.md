@@ -26,6 +26,44 @@ Helpful references and links
   - [More stepper reference](http://wsmoak.net/2016/02/08/stepper-motor-elixir.html)
   - [RPi + Stepper](https://www.maxbotix.com/Setup-Raspberry-Pi-Zero-for-i2c-Sensor-151)
   - [RPi + Stepper Adafruit](https://learn.adafruit.com/adafruit-dc-and-stepper-motor-hat-for-raspberry-pi?view=all)
+  - [I2C Technical ref](https://elixir.bootlin.com/linux/v5.10.1/source/Documentation/i2c/dev-interface.rst)
+  - (https://brandonb.ca/raspberry-pi-zero-w-headless-setup-on-macos)
+## Initial setup
 
+1) Install Nerves: `mix archive.install hex nerves_bootstrap`
+1) 'new-up' a new nerves project `mix nerves.new cat_feeder`
+1) `MIX_TARGET=rpi0  mix deps.get`
+1) Add additional dependencies:
+    - `{:circuits_i2c, "~> 0.1"}`
+    - `{:mix_test_watch, "~> 1.0", only: :dev, runtime: false}`
+1) Figure out how to write tests for a raspberry pi which is not yet connected.
+1) Figure out how to write tests for a stepper motor.
+1) Figure out how to drive a stepper motor.
 
+## How do I RaspberryPi
 
+Acquire a microsd card. I thought I had a few cards that came with a camera somewhere, but apparently they are all lost and gone. Buy more.
+
+`mix firmware` -- requires `MIX_TARGET`
+E.G. `MIX_TARGET=rpi0 mix firmware`
+
+`mix firmware.burn` confirms the SD card that it detects before burning.
+
+```sh
+Building /Users/ck/code/cat_feeder/_build/rpi0_dev/nerves/images/cat_feeder.fw...
+Use 7.5 GiB memory card found at /dev/rdisk2? [Yn] y
+```
+
+With the newly burned SD card plugged into the pi, and the pi powered up with a data-capable USB cable, the pi should respond to a ping: `ping nerves.local`
+
+And to ssh: `ssh nerves.local`
+
+SSH sends you to an `iex>` prompt with all your nerves code loaded.
+
+## Wiring Hat to Stepper
+
+Per Adafruit, there are two pairs of controllers for the stepper: red/yellow and green/gray (or green/brown)
+
+The I2C ports on the hat have two marks, in my case M1/M2 and M3/M4. The center pin on each hat controller is the ground pin, marked GND.
+
+The motor hat is powered separately from the pi. The hat takes a 12v power supply for the steppers.

@@ -1,6 +1,6 @@
 # CatFeeder
 
-**TODO: Add description**
+Use Nerves, Stepper Motors, and a Raspberry Pi Zero to drive an automated cat feeder.
 
 ## Targets
 
