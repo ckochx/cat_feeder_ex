@@ -2,7 +2,11 @@
 
 Use Nerves, Stepper Motors, and a Raspberry Pi Zero to drive an automated cat feeder.
 
+I took a lot of inspiration (and some code) from http://wsmoak.net/2016/02/08/stepper-motor-elixir.html
+
 ## Targets
+
+I wrote this code using a Raspberry Pi Zero, so all the real testing was done with that device: `MIX_TARGET=rpi0`
 
 Nerves applications produce images for hardware targets based on the
 `MIX_TARGET` environment variable. If `MIX_TARGET` is unset, `mix` builds an
@@ -30,3 +34,5 @@ To start your Nerves app:
   * Forum: https://elixirforum.com/c/nerves-forum
   * Discussion Slack elixir-lang #nerves ([Invite](https://elixir-slackin.herokuapp.com/))
   * Source: https://github.com/nerves-project/nerves
+
+## Additional references and resources used:
