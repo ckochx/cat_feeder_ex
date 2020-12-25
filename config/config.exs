@@ -10,6 +10,14 @@ Application.start(:nerves_bootstrap)
 
 config :cat_feeder, target: Mix.target()
 
+config :cat_feeder, CatFeeder.Scheduler,
+  jobs: [
+    feed: [
+      schedule: "00 03 * * *",
+      task: {CatFeeder.Turny, :steps, [100, motor: 0, direction: :forward, style: :double]}
+    ]
+  ]
+
 # Customize non-Elixir parts of the firmware. See
 # https://hexdocs.pm/nerves/advanced-configuration.html for details.
 
