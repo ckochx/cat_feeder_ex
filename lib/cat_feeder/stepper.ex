@@ -1,4 +1,4 @@
-defmodule CatFeeder.Turny do
+defmodule CatFeeder.Stepper do
   require Logger
   use Bitwise
   alias Circuits.I2C
