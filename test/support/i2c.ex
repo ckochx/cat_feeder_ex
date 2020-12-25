@@ -1,4 +1,6 @@
 defmodule I2CBehaviour do
+  @callback bus_names() :: list()
+
   @callback open(any) :: {:ok, term}
 
   @callback write(any, any, any) :: :ok

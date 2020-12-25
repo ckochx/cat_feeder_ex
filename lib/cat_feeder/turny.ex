@@ -25,51 +25,44 @@ defmodule CatFeeder.Turny do
   # These seem to be some of the 16 channels on the PCA9685
   # I think the diagrams in the tutorial show how the PCA9685 is connected to the TB6612's on the board
   # https://learn.adafruit.com/adafruit-dc-and-stepper-motor-hat-for-raspberry-pi?view=all
-  @pwma 8
-  @ain2 9
-  @ain1 10
-  @pwmb 13
-  @bin2 12
-  @bin1 11
-
-  # Motor 1 and Motor 2 pins resp:
-  # Motor1 (M1, M2)
-  #     self.PWMA = 8
-  #     self.AIN2 = 9
-  #     self.AIN1 = 10
-  #     self.PWMB = 13
-  #     self.BIN2 = 12
-  #     self.BIN1 = 11
-  # Motor2 (M3, M4)
-  #     self.PWMA = 2
-  #     self.AIN2 = 3
-  #     self.AIN1 = 4
-  #     self.PWMB = 7
-  #     self.BIN2 = 6
-  #     self.BIN1 = 5
+  # Motor1 (M1, M2): ain2 9 bin1 11 ain1 10 bin2 12 pwma 8 pwmb 13
+  # Motor2 (M3, M4): ain2 3 bin1 5 ain1 4 bin2 6 pwma 2 pwmb 7
 
   # Motor 1 is channels 9 and 10 with 8 held high.
   # Motor 2 is channels 11 and 12 with 13 held high.
   # Motor 3 is channels 3 and 4 with 2 held high.
   # Motor 4 is channels 5 and 6 with 7 held high
 
-  # However the underlying bytecode _should_ remain unchanged.
+  @motor_pins %{
+    0 => [8, 9, 10, 11, 12, 13],
+    1 => [2, 3, 4, 5, 6, 7],
+    :order => [:pwma, :ain2, :ain1, :bin1, :bin2, :pwmb]
+  }
+  # [ain2, bin1, ain1, bin2]
+  @pinput_double %{
+    0 => [1, 1, 0, 0],
+    1 => [0, 1, 1, 0],
+    2 => [0, 0, 1, 1],
+    3 => [1, 0, 0, 1]
+  }
 
-  def steps(steps, device, direction \\ :forward) when device in [0, 1] do
-    Logger.debug("Starting...")
-    {:ok, ref} = i2c().open("i2c-1")
+  @pinput_single %{
+    0 => [1, 0, 0, 0],
+    1 => [0, 1, 0, 0],
+    2 => [0, 0, 1, 0],
+    3 => [0, 0, 0, 1]
+  }
 
-    device_addr =
-      ref
-      |> i2c().detect_devices()
-      |> Enum.at(device)
-
+  def steps(steps, opts) do
+    Logger.debug("Starting steps/2 with steps: #{steps} and opts: #{inspect(opts)}")
+    motor = Keyword.get(opts, :motor, 0)
+    [i2c_bus] = i2c().bus_names()
+    {:ok, ref} = i2c().open(i2c_bus)
+    [device_addr, _] = i2c().detect_devices(ref)
     init(ref, device_addr)
-    # set pwm to 1600 Hz
     prescale(ref, device_addr, 1600)
-    set_pwm_ab(ref, device_addr)
-    turn_steps(ref, device_addr, steps, direction)
-
+    set_pwm_ab(ref, device_addr, motor)
+    turn(ref, device_addr, steps, opts)
     swrst(ref, device_addr)
   end
 
@@ -92,6 +85,7 @@ defmodule CatFeeder.Turny do
     :timer.sleep(5)
   end
 
+  @doc "set pwm to freq Hz (1600)"
   def prescale(ref, device_addr, freq) do
     Logger.debug("Setting prescale to #{freq} Hz")
 
@@ -113,60 +107,73 @@ defmodule CatFeeder.Turny do
     i2c().write(ref, device_addr, <<@mode1>> <> oldmode)
   end
 
-  # @ain2 9 @bin1 11 @ain1 10 @bin2 12
-  # [ain2, bin1, ain1, bin2]
-  @pinput_pattern %{
-    0 => [1, 1, 0, 0],
-    1 => [0, 1, 1, 0],
-    2 => [0, 0, 1, 1],
-    3 => [1, 0, 0, 1],
-    :stop => [0, 0, 0, 0]
-  }
+  @doc """
 
-  def turn_steps(ref, device_addr, turns, direction \\ :forward) do
-    # Turn style
-    # if style == SINGLE:
-    #                self._steps = _SINGLE_STEPS
-    #            elif style == DOUBLE:
-    #                self._steps = _DOUBLE_STEPS
-    #            elif style == INTERLEAVE:
-    #                self._steps = _INTERLEAVE_STEPS
-    #            else:
-    #                raise ValueError("Unsupported step style.")
-    # Single or double (torque) step pattern
-    # _SINGLE_STEPS = bytes([0b0010, 0b0100, 0b0001, 0b1000])
+  Additional turning style info
+  Turn style
+  if style == SINGLE:
+                 self._steps = _SINGLE_STEPS
+             elif style == DOUBLE:
+                 self._steps = _DOUBLE_STEPS
+             elif style == INTERLEAVE:
+                 self._steps = _INTERLEAVE_STEPS
+             else:
+                 raise ValueError("Unsupported step style.")
+  Single or double (torque) step pattern
+  _SINGLE_STEPS = bytes([0b0010, 0b0100, 0b0001, 0b1000])
 
-    # _DOUBLE_STEPS = bytes([0b1010, 0b0110, 0b0101, 0b1001])
+  _DOUBLE_STEPS = bytes([0b1010, 0b0110, 0b0101, 0b1001])
 
-    # _INTERLEAVE_STEPS = bytes(
-    #   [0b1010, 0b0010, 0b0110, 0b0100, 0b0101, 0b0001, 0b1001, 0b1000]
-    # )
-    range = if direction == :forward do
-      1..turns
+  _INTERLEAVE_STEPS = bytes(
+    [0b1010, 0b0010, 0b0110, 0b0100, 0b0101, 0b0001, 0b1001, 0b1000]
+  )
+
+  """
+  def turn(ref, device_addr, steps, opts) do
+    motor = Keyword.get(opts, :motor, 0)
+    direction = Keyword.get(opts, :direction, :forward)
+    style = Keyword.get(opts, :style, :double)
+    pin_addresses = Map.get(@motor_pins, motor)
+
+    range =
+      if direction == :forward do
+        1..steps
+      else
+        steps..1
+      end
+    pinput_pattern = if style == :single do
+      @pinput_single
     else
-      turns..1
+      @pinput_double
     end
 
     Enum.each(
       range,
       fn step ->
         Logger.debug("turning step #{step}")
-        pins = Map.get(@pinput_pattern, Integer.mod(step, 4))
-        Logger.debug("#{inspect(pins)} -->> Pin pattern to set for step: #{step}")
+        pin_values = Map.get(pinput_pattern, Integer.mod(step, 4))
+        Logger.debug("#{inspect(pin_values)} -->> Pin pattern to set for step: #{step}")
 
-        set_pins(ref, device_addr, pins)
+        set_pins(ref, device_addr, pin_addresses, pin_values)
         :timer.sleep(10)
       end
     )
-    # Stop all the signals?
-    set_pins(ref, device_addr, Map.get(@pinput_pattern, :stop))
+
+    # Stop all the pins
+    zeroes = [0, 0, 0, 0]
+    set_pins(ref, device_addr, pin_addresses, zeroes)
   end
 
-  def set_pins(ref, device_addr, [ain2, bin1, ain1, bin2]) do
-    set_pin(ref, device_addr, @ain2, ain2)
-    set_pin(ref, device_addr, @bin1, bin1)
-    set_pin(ref, device_addr, @ain1, ain1)
-    set_pin(ref, device_addr, @bin2, bin2)
+  def set_pins(ref, device_addr, [_pwma, ain2_pin, ain1_pin, bin1_pin, bin2_pin, _pwmb], [
+        ain2,
+        bin1,
+        ain1,
+        bin2
+      ]) do
+    set_pin(ref, device_addr, ain2_pin, ain2)
+    set_pin(ref, device_addr, bin1_pin, bin1)
+    set_pin(ref, device_addr, ain1_pin, ain1)
+    set_pin(ref, device_addr, bin2_pin, bin2)
   end
 
   def set_pin(ref, device_addr, channel, 0) do
@@ -178,13 +185,19 @@ defmodule CatFeeder.Turny do
   end
 
   # These don't need to change unless you are micro-stepping
-  def set_pwm_ab(ref, device_addr) do
-    set_pwm(ref, device_addr, @pwma, 0, 0x0FF0)
-    set_pwm(ref, device_addr, @pwmb, 0, 0x0FF0)
+  def set_pwm_ab(ref, device_addr, motor) do
+    [pwma_pin, _, _, _, _, pwmb_pin] = Map.get(@motor_pins, motor)
+    set_pwm(ref, device_addr, pwma_pin, 0, 0x0FF0)
+    set_pwm(ref, device_addr, pwmb_pin, 0, 0x0FF0)
   end
 
-  # The registers for each of the 16 channels are sequential
-  # so the address can be calculated as an offset from the first one
+  @doc """
+  TODO: Verify this sentence about the channels and what value they're getting set to.
+  Are all these writes strictly necessary?
+
+  The registers for each of the 16 channels are sequential
+  so the address can be calculated as an offset from the first one
+  """
   def set_pwm(ref, device_addr, channel, on, off) do
     i2c().write(ref, device_addr, <<@led0_on_l + 4 * channel, on &&& 0xFF>>)
     i2c().write(ref, device_addr, <<@led0_on_h + 4 * channel, on >>> 8>>)

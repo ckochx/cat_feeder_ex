@@ -1,5 +1,4 @@
 defmodule CatFeeder do
-  alias Circuits.I2C
   @moduledoc """
   Documentation for CatFeeder.
   """
