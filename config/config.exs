@@ -4,6 +4,7 @@
 # This configuration file is loaded before any dependency and
 # is restricted to this project.
 import Config
+require Logger
 
 # Enable the Nerves integration with Mix
 Application.start(:nerves_bootstrap)
@@ -14,9 +15,12 @@ config :cat_feeder, CatFeeder.Scheduler,
   jobs: [
     feed: [
       schedule: "00 03 * * *",
-      task: {CatFeeder.Turny, :steps, [100, motor: 0, direction: :forward, style: :double]}
+      task: {CatFeeder, :feed, []}
     ]
   ]
+
+config :cat_feeder, :feeding,
+  delay: 2000
 
 # Customize non-Elixir parts of the firmware. See
 # https://hexdocs.pm/nerves/advanced-configuration.html for details.
@@ -40,8 +44,32 @@ else
   import_config "target.exs"
 end
 
+# Test env config
 if Mix.env() == :test do
+  config :cat_feeder, :feeding,
+    delay: 200
+
   config :logger,
     backends: [:console],
     level: :info
+end
+
+# Dev env config
+if Mix.env() == :dev do
+  config :logger,
+    backends: [:console],
+    level: :debug
+
+  # Fire every minute for testing
+  config :cat_feeder, CatFeeder.Scheduler,
+    jobs: [
+      feed: [
+        schedule: "*/1 * * * *",
+        task: {CatFeeder, :feed, []}
+      ],
+      logger: [
+        schedule: "*/1 * * * *",
+        task: fn -> Logger.info("firing every minute label: Quantum scheduled output") end
+      ]
+    ]
 end

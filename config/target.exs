@@ -77,13 +77,13 @@ config :mdns_lite,
       name: "SSH Remote Login Protocol",
       protocol: "ssh",
       transport: "tcp",
-      port: 22
+      port: 2297
     },
     %{
       name: "Secure File Transfer Protocol over SSH",
       protocol: "sftp-ssh",
       transport: "tcp",
-      port: 22
+      port: 2297
     },
     %{
       name: "Erlang Port Mapper Daemon",
