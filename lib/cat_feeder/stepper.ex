@@ -74,6 +74,15 @@ defmodule CatFeeder.Stepper do
 
   In theory this code should work for a unipolar or bipolar motor. However all code was tested with
   bipolar stepper motors connected to a Raspberry Pi Zero via a Motor Bonnet
+
+  ## Example
+    # turn 25% of revolution
+    ie_x> Stepper.steps(50, motor: 0, style: :double, direction: :forward)
+    # turn 50% of revolution
+    ie_x> Stepper.steps(100, motor: 0, style: :double, direction: :forward)
+    # turn 50% of revolution interleaved
+    ie_x> Stepper.steps(200, motor: 0, style: :interleaved, direction: :forward)
+
   """
   def steps(steps, opts) when steps > 0 do
     Logger.debug("Starting steps/2 with steps: #{steps} and opts: #{inspect(opts)}")
@@ -131,7 +140,6 @@ defmodule CatFeeder.Stepper do
     prescaleval = trunc(Float.round(25_000_000.0 / 4096.0 / freq) - 1)
     Logger.debug("prescale value is #{prescaleval}")
 
-    # REVIEW: can this just be a read?
     oldmode = i2c().write_read!(ref, device_addr, <<@mode1>>, 1)
     :timer.sleep(5)
     # set bit 4 (sleep) and bit 0 (ALLCALL) to allow setting prescale e.g. 1 0 0 0 1
@@ -235,7 +243,7 @@ defmodule CatFeeder.Stepper do
 
   @doc """
   Set the PWMA and PWMB pins
-  These don't need to change unless you are micro-stepping
+  These don't need to change unless micro-stepping
   """
   def set_pwm_ab(ref, device_addr, motor) do
     [pwma_pin, _, _, _, _, pwmb_pin] = Map.get(@motor_pins, motor)
@@ -275,16 +283,17 @@ defmodule CatFeeder.Stepper do
   0x2C LED9_OFF_L
   0X2D LED9_OFF_H
 
-  REVIEW: The two LED_ON_L and LED_OFF_L registers might be stepped on by the _H registers.
-  Experimient with not setting anything to these registers to see what happens
+  The two LED_ON_L and LED_OFF_L registers appear to be stepped on by the _H registers.
+  Leaving the references for completeness, however it appears they are not strictly necessary to turn
+  the stepper in :single, :double, or :interleaved mode.
+  They may be required when microstepping, which is not yet supported.
   """
   def set_pwm(ref, device_addr, channel, on, off) do
-    # LED#{channel}_ON_L
-    i2c().write(ref, device_addr, <<@led0_on_l + 4 * channel, on &&& 0xFF>>)
+    # LED#{channel}_ON_L i2c().write(ref, device_addr, <<@led0_on_l + 4 * channel, on &&& 0xFF>>)
+    # LED#{channel}_OFF_L i2c().write(ref, device_addr, <<@led0_on_l + 2 + 4 * channel, off &&& 0xFF>>)
+
     # LED#{channel}_ON_H
     i2c().write(ref, device_addr, <<@led0_on_l + 1 + 4 * channel, on >>> 8>>)
-    # LED#{channel}_OFF_L
-    i2c().write(ref, device_addr, <<@led0_on_l + 2 + 4 * channel, off &&& 0xFF>>)
     # LED#{channel}_OFF_H
     i2c().write(ref, device_addr, <<@led0_on_l + 3 + 4 * channel, off >>> 8>>)
   end

@@ -5,29 +5,34 @@ defmodule CatFeeder.StepperTest do
   alias CatFeeder.I2CStub
   alias CatFeeder.Stepper
 
+  doctest Stepper
+
   setup_all do
-    stub_with(I2CMock, CatFeeder.I2CStub)
-    Application.put_env(:cat_feeder, :i2c_module, I2CStub)
-    # Set log level to debug for this test i2c_module for helpful added output
+    # Set log level to debug for this the I2C tests for helpful added output
     Logger.configure(level: :debug)
+  end
+
+  setup do
+    verify_on_exit!()
+    stub_with(I2CMock, I2CStub)
+    Application.put_env(:cat_feeder, :i2c_module, I2CMock)
     :ok
   end
 
   describe "turn/4" do
     test "forward" do
-      # There are a lot of writes for each step. Look into this, it might not be correct or efficient
       ref = "ref"
       device_address = 99
 
-      expect(I2CMock, :write, 80, fn ^ref, ^device_address, _ ->
+      expect(I2CMock, :write, 32, fn ^ref, ^device_address, _ ->
         :ok
       end)
 
-      Stepper.turn(ref, device_address, 4, motor: 0, direction: :forward, style: :single)
+      Stepper.turn(ref, device_address, 3, motor: 0, direction: :forward, style: :single)
     end
 
     test "backward" do
-      expect(I2CMock, :write, 80, fn "ref", 99, _ ->
+      expect(I2CMock, :write, 40, fn "ref", 99, _ ->
         :ok
       end)
 
