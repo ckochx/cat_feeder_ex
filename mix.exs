@@ -64,6 +64,7 @@ defmodule CatFeeder.MixProject do
 
       # Dev and Test Deps
       {:mix_test_watch, "~> 1.0", only: :dev, runtime: false},
+      {:credo, "~> 1.5", only: [:dev, :test], runtime: false},
       {:hammox, "~> 0.3", only: :test}
     ]
   end

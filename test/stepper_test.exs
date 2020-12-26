@@ -2,8 +2,8 @@ defmodule CatFeeder.StepperTest do
   use ExUnit.Case
   require Logger
   import Hammox
-  alias CatFeeder.Stepper
   alias CatFeeder.I2CStub
+  alias CatFeeder.Stepper
 
   setup_all do
     stub_with(I2CMock, CatFeeder.I2CStub)

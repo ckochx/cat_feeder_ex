@@ -31,6 +31,7 @@ Helpful references and links
   - [RPi + Stepper Adafruit](https://learn.adafruit.com/adafruit-dc-and-stepper-motor-hat-for-raspberry-pi?view=all)
   - [I2C Technical ref](https://elixir.bootlin.com/linux/v5.10.1/source/Documentation/i2c/dev-interface.rst)
   - (https://brandonb.ca/raspberry-pi-zero-w-headless-setup-on-macos)
+  - [PCA9685 Chip reference](https://cdn-shop.adafruit.com/datasheets/PCA9685.pdf)
 ## Initial setup
 
 1) Install Nerves: `mix archive.install hex nerves_bootstrap`

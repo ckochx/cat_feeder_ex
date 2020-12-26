@@ -1,4 +1,5 @@
 defmodule I2CBehaviour do
+  @moduledoc "I2C Behavior callbacks"
   @callback bus_names() :: list()
 
   @callback open(any) :: {:ok, term}
@@ -11,6 +12,7 @@ defmodule I2CBehaviour do
 end
 
 defmodule CatFeeder.I2CStub do
+  @moduledoc "I2C Behavior stubs"
   @behaviour I2CBehaviour
 
   @impl I2CBehaviour

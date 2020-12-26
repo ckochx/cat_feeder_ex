@@ -36,7 +36,7 @@ defmodule CatFeeder.Application do
     ]
   end
 
-  def target() do
+  def target do
     Application.get_env(:cat_feeder, :target)
   end
 end
