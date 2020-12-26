@@ -13,7 +13,7 @@ defmodule CatFeeder.StepperTest do
     :ok
   end
 
-  describe "turn_steps/3" do
+  describe "turn/4" do
     test "forward" do
       # There are a lot of writes for each step. Look into this, it might not be correct or efficient
       ref = "ref"
@@ -46,6 +46,29 @@ defmodule CatFeeder.StepperTest do
 
     test "not forward" do
       assert :ok == Stepper.steps(3, motor: 0, direction: :not_forward)
+    end
+
+    test "raises for 0 or negative steps" do
+      assert_raise FunctionClauseError, fn -> Stepper.steps(0, motor: 0, direction: :forward) end
+      assert_raise FunctionClauseError, fn -> Stepper.steps(-1, motor: 0, direction: :forward) end
+    end
+    test "raises for non-integer steps" do
+      assert_raise ArgumentError, fn -> Stepper.steps(:infinity, motor: 0, direction: :forward) end
+    end
+  end
+
+  describe "interleaved/0" do
+    test "interleave single and double" do
+      assert Stepper.interleaved == %{
+        0 => [1, 1, 0, 0],
+        1 => [0, 1, 0, 0],
+        2 => [0, 1, 1, 0],
+        3 => [0, 0, 1, 0],
+        4 => [0, 0, 1, 1],
+        5 => [0, 0, 0, 1],
+        6 => [1, 0, 0, 1],
+        7 => [1, 0, 0, 0]
+      }
     end
   end
 end

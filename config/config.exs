@@ -16,8 +16,8 @@ config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 config :cat_feeder, CatFeeder.Scheduler,
   timezone: "America/Chicago",
   jobs: [
-    feed: [
-      schedule: "00 03 * * *",
+    feed_0330: [
+      schedule: "30 03 * * *",
       task: {CatFeeder, :feed, []}
     ]
   ]
@@ -67,10 +67,6 @@ if Mix.env() == :dev do
       feed: [
         schedule: "*/1 * * * *",
         task: {CatFeeder, :feed, []}
-      ],
-      logger: [
-        schedule: "*/1 * * * *",
-        task: fn -> Logger.info("firing every minute label: Quantum scheduled output") end
       ]
     ]
 end

@@ -4,41 +4,50 @@ defmodule CatFeeder.Stepper do
   alias Circuits.I2C
 
   @moduledoc """
-  Turn the stepper motor.
+  Control one or two stepper motors via a PCA9685 chip on a motor bonnet.
+
+  This motor control was tested on an Adafruit Motor Bonnet controlling NEMA17 stepper motors.
+    + [Motor Hat (bonnet)](https://www.adafruit.com/product/4280)
+    + [Stepper motors](https://www.adafruit.com/product/324)
+
+  However it _should_ work for many combinations of PCA9685 controllers and motors.
+  Your mileage may vary (YMMV) and user discretion is advised.
 
   Module attrs are register names and address values.
 
   The PCA9685 Chip reference (https://cdn-shop.adafruit.com/datasheets/PCA9685.pdf) is very helpful
   in decoding these values and their meaning.
+
+  #### Misc Notes
+  Mode1 bit 4 is SLEEP 000X0000
+
+  Motor1 (M1, M2): ain2 9 bin1 11 ain1 10 bin2 12 pwma 8 pwmb 13
+  Motor2 (M3, M4): ain2 3 bin1 5 ain1 4 bin2 6 pwma 2 pwmb 7
+
+  Motor 1 is channels 9 and 10 with 8 held high.
+  Motor 2 is channels 11 and 12 with 13 held high.
+  Motor 3 is channels 3 and 4 with 2 held high.
+  Motor 4 is channels 5 and 6 with 7 held high
+
+  The diagrams in the tutorial show how the PCA9685 is connected to the TB6612's on the board
+  https://learn.adafruit.com/adafruit-dc-and-stepper-motor-hat-for-raspberry-pi?view=all
   """
-  # Mode1 bit 4 is SLEEP 000X0000
   @mode1 0x00
   @mode2 0x01
   @prescale 0xFE
   @all_on_l 0xFA
-  # 00000110
   @led0_on_l 0x06
   @allcall 0x01
   @outdrv 0x04
   @swrst 0x06
 
-  # These seem to be some of the 16 channels on the PCA9685
-  # I think the diagrams in the tutorial show how the PCA9685 is connected to the TB6612's on the board
-  # https://learn.adafruit.com/adafruit-dc-and-stepper-motor-hat-for-raspberry-pi?view=all
-  # Motor1 (M1, M2): ain2 9 bin1 11 ain1 10 bin2 12 pwma 8 pwmb 13
-  # Motor2 (M3, M4): ain2 3 bin1 5 ain1 4 bin2 6 pwma 2 pwmb 7
-
-  # Motor 1 is channels 9 and 10 with 8 held high.
-  # Motor 2 is channels 11 and 12 with 13 held high.
-  # Motor 3 is channels 3 and 4 with 2 held high.
-  # Motor 4 is channels 5 and 6 with 7 held high
-
   @motor_pins %{
     0 => [8, 9, 10, 11, 12, 13],
     1 => [2, 3, 4, 5, 6, 7],
-    :order => [:pwma, :ain2, :ain1, :bin1, :bin2, :pwmb]
+    :order => ["pwma", "ain2", "ain1", "bin1", "bin2", "pwmb"]
   }
-  # [ain2, bin1, ain1, bin2]
+
+  # *pin order* "ain2", "bin1", "ain1", "bin2"
   @pinput_double %{
     0 => [1, 1, 0, 0],
     1 => [0, 1, 1, 0],
@@ -47,13 +56,26 @@ defmodule CatFeeder.Stepper do
   }
 
   @pinput_single %{
-    0 => [1, 0, 0, 0],
-    1 => [0, 1, 0, 0],
-    2 => [0, 0, 1, 0],
-    3 => [0, 0, 0, 1]
+    0 => [0, 1, 0, 0],
+    1 => [0, 0, 1, 0],
+    2 => [0, 0, 0, 1],
+    3 => [1, 0, 0, 0]
   }
 
-  def steps(steps, opts) do
+  @doc """
+  Control a stepper motor by stepping is for `steps` number of steps.
+  Steps must be a non-negative integer.
+
+  Supported `opts` (a keyword list):
+
+    -* motor: 0 or 1 only. Turn the first or second motor.
+    -* direction: :forward (default) or :backward
+    -* style: :single, :double (default), or :interleaved
+
+  In theory this code should work for a unipolar or bipolar motor. However all code was tested with
+  bipolar stepper motors connected to a Raspberry Pi Zero via a Motor Bonnet
+  """
+  def steps(steps, opts) when steps > 0 do
     Logger.debug("Starting steps/2 with steps: #{steps} and opts: #{inspect(opts)}")
     motor = Keyword.get(opts, :motor, 0)
     [i2c_bus] = i2c().bus_names()
@@ -66,25 +88,28 @@ defmodule CatFeeder.Stepper do
     swrst(ref, device_addr)
   end
 
-  # PCA9685 Software Reset (Section 7.6 on pg 28)
-  # Set the chip into a known state
+  @doc """
+  PCA9685 Software Reset (Section 7.6 on pg 28)
+  Set the chip into a known state and de-energizing the motor coils when the turning operation is complete.
+  """
   def swrst(ref, device_addr) do
     Logger.debug("PCA9685 Software Reset...")
     i2c().write(ref, device_addr, <<@swrst>>)
   end
 
+  @doc """
+  `<<@mode2, @outdrv>>` external driver, see PCA9685 docs
+  `<<@mode1, @allcall>>` program all PCA9685's at once
+  The LED All Call I2C-bus address allows all the PCA9685s in the bus to be programmed at the same time
+  (ALLCALL bit in register MODE1 must be equal to 1 (power-up default state)).
+  This address is programmable through the I2C-bus and can be used during either an I2C-bus read or write sequence.
+  The register address can also be programmed as a Sub Call.
+  """
   def init(ref, device_addr) do
     Logger.debug("Initializing...")
 
     set_all_pwm(ref, device_addr, 0, 0)
-
-    # external driver, see docs
     i2c().write(ref, device_addr, <<@mode2, @outdrv>>)
-    # program all PCA9685's at once
-    # The LED All Call I2C-bus address allows all the PCA9685s in the bus to be programmed at the same time
-    # (ALLCALL bit in register MODE1 must be equal to 1 (power-up default state)).
-    # This address is programmable through the I2C-bus and can be used during either an I2C-bus read or write sequence.
-    # The register address can also be programmed as a Sub Call.
     i2c().write(ref, device_addr, <<@mode1, @allcall>>)
     :timer.sleep(5)
   end
@@ -106,7 +131,7 @@ defmodule CatFeeder.Stepper do
     prescaleval = trunc(Float.round(25_000_000.0 / 4096.0 / freq) - 1)
     Logger.debug("prescale value is #{prescaleval}")
 
-    # TODO: can this just be a read?
+    # REVIEW: can this just be a read?
     oldmode = i2c().write_read!(ref, device_addr, <<@mode1>>, 1)
     :timer.sleep(5)
     # set bit 4 (sleep) and bit 0 (ALLCALL) to allow setting prescale e.g. 1 0 0 0 1
@@ -114,7 +139,7 @@ defmodule CatFeeder.Stepper do
     i2c().write(ref, device_addr, <<@prescale, prescaleval>>)
     # un-set sleep bit
     i2c().write(ref, device_addr, <<@mode1, 0x01>>)
-    # pg 14 it takes 500 us for the oscillator to be ready
+    # pg 14 it takes 500 μs for the oscillator to be ready
     :timer.sleep(5)
 
     # put back old mode
@@ -122,48 +147,38 @@ defmodule CatFeeder.Stepper do
   end
 
   @doc """
-    # CCW (per pin diagram)
-    # [ain2, bin1, ain1, bin2]
+  Activate the pins sequentially to turn the motor.
 
-            A input 1
-              channel 10
-    B input 2       B input 1
-      channel 12      channel 11
-            A input 2
-              channel 9
+  Currently 3 stepping styles are supported: :single, :double (default), and :interleaved
 
-  There are four essential types of steps you can use with your Motor HAT. All four kinds will work with any unipolar or bipolar stepper motor
+  CCW (per pin diagram)
+          A input 1
+            channel 10
+  B input 2       B input 1
+    channel 12      channel 11
+          A input 2
+            channel 9
 
-    Single Steps - this is the simplest type of stepping, and uses the least power. It uses a single coil to 'hold' the motor in place, as seen in the animated GIF above
-    Double Steps - this is also fairly simple, except instead of a single coil, it has two coils on at once. For example, instead of just coil #1 on, you would have coil #1 and #2 on at once. This uses more power (approx 2x) but is stronger than single stepping (by maybe 25%)
-    Interleaved Steps - this is a mix of Single and Double stepping, where we use single steps interleaved with double. It has a little more strength than single stepping, and about 50% more power. What's nice about this style is that it makes your motor appear to have 2x as many steps, for a smoother transition between steps
-    Microstepping - this is where we use a mix of single stepping with PWM to slowly transition between steps. It's slower than single stepping but has much higher precision. We recommend 8 microstepping which multiplies the # of steps your stepper motor has by 8.
+  There are four essential types of steps you can use with your Motor HAT.
+  All four kinds will work with any ~unipolar~ or bipolar stepper motor.
 
-
-  Additional turning style info
-  Turn style
-  if style == SINGLE:
-                 self._steps = _SINGLE_STEPS
-             elif style == DOUBLE:
-                 self._steps = _DOUBLE_STEPS
-             elif style == INTERLEAVE:
-                 self._steps = _INTERLEAVE_STEPS
-             else:
-                 raise ValueError("Unsupported step style.")
-  Single or double (torque) step pattern
-  _SINGLE_STEPS = bytes([0b0010, 0b0100, 0b0001, 0b1000])
-
-  _DOUBLE_STEPS = bytes([0b1010, 0b0110, 0b0101, 0b1001])
-
-  _INTERLEAVE_STEPS = bytes(
-    [0b1010, 0b0010, 0b0110, 0b0100, 0b0101, 0b0001, 0b1001, 0b1000]
-  )
-
+  Single Steps - this is the simplest type of stepping, and uses the least power.
+    It uses a single coil to 'hold' the motor in place.
+  Double Steps - this is also fairly simple, except instead of a single coil, it has two coils on at once.
+    For example, instead of just coil #1 on, you would have coil #1 and #2 on at once.
+    This uses more power (approx 2x) but is stronger than single stepping (by maybe 25%)
+  Interleaved Steps - this is a mix of Single and Double stepping, where we use single steps
+    interleaved with double. It has a little more strength than single stepping,
+    and about 50% more power. What's nice about this style is that it makes your
+    motor appear to have 2x as many steps, for a smoother transition between steps.
+  Microstepping (currently unsupported by this code) - this is where we use a mix of
+    single stepping with PWM to slowly transition between steps.
+    It's slower than single stepping but has much higher precision.
+    We recommend 8 microstepping which multiplies the # of steps your stepper motor has by 8.
   """
   def turn(ref, device_addr, steps, opts) do
     motor = Keyword.get(opts, :motor, 0)
     direction = Keyword.get(opts, :direction, :forward)
-    style = Keyword.get(opts, :style, :double)
     pin_addresses = Map.get(@motor_pins, motor)
 
     range =
@@ -174,17 +189,19 @@ defmodule CatFeeder.Stepper do
       end
 
     pinput_pattern =
-      if style == :single do
-        @pinput_single
-      else
-        @pinput_double
+      case Keyword.get(opts, :style, :double) do
+        :single -> @pinput_single
+        :interleaved -> interleaved()
+        _ -> @pinput_double
       end
+
+    mod_value = Enum.count(pinput_pattern)
 
     Enum.each(
       range,
       fn step ->
         Logger.debug("turning step #{step}")
-        pin_values = Map.get(pinput_pattern, Integer.mod(step, 4))
+        pin_values = Map.get(pinput_pattern, Integer.mod(step, mod_value))
         Logger.debug("#{inspect(pin_values)} -->> Pin pattern to set for step: #{step}")
 
         set_pins(ref, device_addr, pin_addresses, pin_values)
@@ -192,9 +209,8 @@ defmodule CatFeeder.Stepper do
       end
     )
 
-    # Stop all the pins
-    zeroes = [0, 0, 0, 0]
-    set_pins(ref, device_addr, pin_addresses, zeroes)
+    # Stop all the pins, send 0 values
+    set_pins(ref, device_addr, pin_addresses, [0, 0, 0, 0])
   end
 
   def set_pins(ref, device_addr, [_pwma, ain2_pin, ain1_pin, bin1_pin, bin2_pin, _pwmb], [
@@ -217,7 +233,10 @@ defmodule CatFeeder.Stepper do
     set_pwm(ref, device_addr, channel, 0x1000, 0)
   end
 
-  # These don't need to change unless you are micro-stepping
+  @doc """
+  Set the PWMA and PWMB pins
+  These don't need to change unless you are micro-stepping
+  """
   def set_pwm_ab(ref, device_addr, motor) do
     [pwma_pin, _, _, _, _, pwmb_pin] = Map.get(@motor_pins, motor)
     set_pwm(ref, device_addr, pwma_pin, 0, 0x0FF0)
@@ -226,7 +245,7 @@ defmodule CatFeeder.Stepper do
 
   @doc """
   See PCA9685 docs Table 7
-  For each LED_n register, the 3 most significant bits (7:5) are reserved and indicated as non-writable.
+  For each LED_n_OFF_H and LED_n_ON_H register, the 3 most significant bits (7:5) are reserved and indicated as non-writable.
   E.G. 0 0 0 * * * * *
 
   `LED_n full OFF` takes a (4th) bit value of: _ _ _ 1 * * * *
@@ -242,34 +261,38 @@ defmodule CatFeeder.Stepper do
   0 >>> 8 = 0
   0x1000 >>> 8 = 16 = 1 0 0 0 0 = `LED_n full OFF`
   0x0FF0 >>> 8 = 15 = 1 1 1 1
-    I'm not sure. I think this wouldn't change the value of the 4th bit.
+    I'm not sure. I believe this would 0 the value of the fourth bit
+    e.g. 0 0 0 0 1 1 1 1 = `LED_n full ON`
   0x0FF0 &&& 0xff = 240 = 1 1 1 1 0 0 0 0 = `LED_n full OFF`
 
   Use the first register address (@led0_on_l: 0x06) as the address base in order to calculate
   the offsets to each register for the current channel.
 
   E.G LED0_ON_L = 0x06;
-  0x06 + 4 * 9 = 42 = 1 0 1 0 1 0 = 0x2A = LED9_ON_L
+  LED9, channel 9
+  0x2A = 0x06 + 4 * 9 = 42 = 1 0 1 0 1 0 = LED9_ON_L
   0x2B LED9_ON_H
   0x2C LED9_OFF_L
   0X2D LED9_OFF_H
 
-  TODO: The two LED_ON_L and LED_OFF_L registers might be stepped on by the _H registers.
+  REVIEW: The two LED_ON_L and LED_OFF_L registers might be stepped on by the _H registers.
   Experimient with not setting anything to these registers to see what happens
   """
   def set_pwm(ref, device_addr, channel, on, off) do
-    # LED_channel_ON_L
+    # LED#{channel}_ON_L
     i2c().write(ref, device_addr, <<@led0_on_l + 4 * channel, on &&& 0xFF>>)
-    # LED_channel_ON_H
+    # LED#{channel}_ON_H
     i2c().write(ref, device_addr, <<@led0_on_l + 1 + 4 * channel, on >>> 8>>)
-    # LED_channel_OFF_L
+    # LED#{channel}_OFF_L
     i2c().write(ref, device_addr, <<@led0_on_l + 2 + 4 * channel, off &&& 0xFF>>)
-    # LED_channel_OFF_H
+    # LED#{channel}_OFF_H
     i2c().write(ref, device_addr, <<@led0_on_l + 3 + 4 * channel, off >>> 8>>)
   end
 
-  # The PCA9685 has special registers for setting ALL channels
-  # (or 1/3 of them) to the same value.
+  @doc """
+  The PCA9685 has special registers for setting ALL channels
+  (or 1/3 of them) to the same value.
+  """
   def set_all_pwm(ref, device_addr, on, off) do
     i2c().write(ref, device_addr, <<@all_on_l, on &&& 0xFF>>)
     i2c().write(ref, device_addr, <<@all_on_l + 1, on >>> 8>>)
@@ -277,6 +300,18 @@ defmodule CatFeeder.Stepper do
     i2c().write(ref, device_addr, <<@all_on_l + 3, off >>> 8>>)
   end
 
+  @doc """
+  Interleave the single and double pin input for :interleaved style stepping
+  """
+  def interleaved do
+    Enum.reduce(@pinput_double, %{}, fn {k, v}, acc ->
+      acc
+      |> Map.put(2 * k, v)
+      |> Map.put(2 * k + 1, Map.get(@pinput_single, k))
+    end)
+  end
+
+  _docp = "Allow overriding the I2C module via application config."
   defp i2c do
     Application.get_env(:cat_feeder, :i2c_module, I2C)
   end
