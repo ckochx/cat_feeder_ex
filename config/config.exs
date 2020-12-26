@@ -11,7 +11,10 @@ Application.start(:nerves_bootstrap)
 
 config :cat_feeder, target: Mix.target()
 
+config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
+
 config :cat_feeder, CatFeeder.Scheduler,
+  timezone: "America/Chicago",
   jobs: [
     feed: [
       schedule: "00 03 * * *",
@@ -19,8 +22,7 @@ config :cat_feeder, CatFeeder.Scheduler,
     ]
   ]
 
-config :cat_feeder, :feeding,
-  delay: 2000
+config :cat_feeder, :feeding, delay: 2000
 
 # Customize non-Elixir parts of the firmware. See
 # https://hexdocs.pm/nerves/advanced-configuration.html for details.
@@ -46,8 +48,7 @@ end
 
 # Test env config
 if Mix.env() == :test do
-  config :cat_feeder, :feeding,
-    delay: 200
+  config :cat_feeder, :feeding, delay: 200
 
   config :logger,
     backends: [:console],

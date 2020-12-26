@@ -22,9 +22,9 @@ defmodule CatFeeder do
   end
 
   def feed do
-    Stepper.steps(100, [motor: 0, direction: :forward, style: :double])
+    Stepper.steps(100, motor: 0, direction: :forward, style: :double)
     delay()
-    Stepper.steps(100, [motor: 1, direction: :forward, style: :double])
+    Stepper.steps(100, motor: 1, direction: :forward, style: :double)
   end
 
   defp delay do

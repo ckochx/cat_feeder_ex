@@ -59,6 +59,8 @@ defmodule CatFeeder.MixProject do
       # Communicate with RaspberryPi via I2C circuit
       {:circuits_i2c, "~> 0.1"},
       {:quantum, "~> 3.0"},
+      # Quantum needs TZData in order to schedule in the local timezone
+      {:tzdata, "~> 1.0.5"},
 
       # Dev and Test Deps
       {:mix_test_watch, "~> 1.0", only: :dev, runtime: false},
