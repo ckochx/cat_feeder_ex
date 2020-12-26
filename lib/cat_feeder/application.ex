@@ -14,7 +14,6 @@ defmodule CatFeeder.Application do
       [
         # Hook up the Quantum Scheduler
         CatFeeder.Scheduler
-
       ] ++ children(target())
 
     Supervisor.start_link(children, opts)

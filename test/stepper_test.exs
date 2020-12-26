@@ -18,9 +18,11 @@ defmodule CatFeeder.StepperTest do
       # There are a lot of writes for each step. Look into this, it might not be correct or efficient
       ref = "ref"
       device_address = 99
+
       expect(I2CMock, :write, 80, fn ^ref, ^device_address, _ ->
         :ok
       end)
+
       Stepper.turn(ref, device_address, 4, motor: 0, direction: :forward, style: :single)
     end
 
@@ -28,6 +30,7 @@ defmodule CatFeeder.StepperTest do
       expect(I2CMock, :write, 80, fn "ref", 99, _ ->
         :ok
       end)
+
       Stepper.turn("ref", 99, 4, motor: 0, direction: :backward, style: :double)
     end
   end

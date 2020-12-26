@@ -15,6 +15,9 @@ New hardware:
   - [Motor Hat (bonnet)](https://www.adafruit.com/product/4280)
   - [Stepper motors](https://www.adafruit.com/product/324)
   - [Power supply](https://smile.amazon.com/gp/product/B06Y64QLBM)
+  - [Shaft Couplers](https://smile.amazon.com/gp/product/B07FXY9B8D)
+  - [Brackets](https://smile.amazon.com/gp/product/B07D7P2DC3)
+  - [MicroSD Card](https://smile.amazon.com/gp/product/B07R3QRGGF)
 
 New software:
 
@@ -72,8 +75,8 @@ The motor hat is powered separately from the pi. The hat takes a 12v power suppl
 
 Per raspberry pi documentation:
 ```
-Motor1 (M1, M2): ain2 9 bin1 11 ain1 10 bin2 12 pwma 8 pwmb 13
-Motor2 (M3, M4): ain2 3 bin1 5 ain1 4 bin2 6 pwma 2 pwmb 7
+Motor1 (M1, M2): ain1: 10 ain2: 9 bin1: 11 bin2: 12 pwma: 8 pwmb: 13
+Motor2 (M3, M4): ain1: 4 ain2: 3 bin1: 5 bin2: 6 pwma: 2 pwmb: 7
 ```
 
 ## Controlling the stepper

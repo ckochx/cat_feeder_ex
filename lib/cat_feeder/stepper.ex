@@ -3,21 +3,21 @@ defmodule CatFeeder.Stepper do
   use Bitwise
   alias Circuits.I2C
 
-  # bit 4 is SLEEP 000X0000
+  @moduledoc """
+  Turn the stepper motor.
+
+  Module attrs are register names and address values.
+
+  The PCA9685 Chip reference (https://cdn-shop.adafruit.com/datasheets/PCA9685.pdf) is very helpful
+  in decoding these values and their meaning.
+  """
+  # Mode1 bit 4 is SLEEP 000X0000
   @mode1 0x00
   @mode2 0x01
   @prescale 0xFE
-
   @all_on_l 0xFA
-  @all_on_h 0xFB
-  @all_off_l 0xFC
-  @all_off_h 0xFD
-
+  # 00000110
   @led0_on_l 0x06
-  @led0_on_h 0x07
-  @led0_off_l 0x08
-  @led0_off_h 0x09
-
   @allcall 0x01
   @outdrv 0x04
   @swrst 0x06
@@ -81,11 +81,24 @@ defmodule CatFeeder.Stepper do
     # external driver, see docs
     i2c().write(ref, device_addr, <<@mode2, @outdrv>>)
     # program all PCA9685's at once
+    # The LED All Call I2C-bus address allows all the PCA9685s in the bus to be programmed at the same time
+    # (ALLCALL bit in register MODE1 must be equal to 1 (power-up default state)).
+    # This address is programmable through the I2C-bus and can be used during either an I2C-bus read or write sequence.
+    # The register address can also be programmed as a Sub Call.
     i2c().write(ref, device_addr, <<@mode1, @allcall>>)
     :timer.sleep(5)
   end
 
-  @doc "set pwm to freq Hz (1600)"
+  @doc """
+  7.3.5
+  PWM frequency PRE_SCALE
+  The hardware forces a minimum value that can be loaded into the PRE_SCALE register at ‘3’.
+  The PRE_SCALE register defines the frequency at which the outputs modulate.
+  The prescale value is determined with the formula shown in Equation 1:(1)where the update rate is the output modulation frequency required.
+  For example, for an output default frequency of 200 Hz with an oscillator clock frequency of 25 MHz:(2)
+  The maximum PWM frequency is 1526 Hz if the PRE_SCALE register is set "0x03h".
+  The minimum PWM frequency is 24 Hz if the PRE_SCALE register is set "0xFFh". The PRE_SCALE register can only be set when the SLEEP bit of MODE1 register is set to logic 1
+  """
   def prescale(ref, device_addr, freq) do
     Logger.debug("Setting prescale to #{freq} Hz")
 
@@ -93,9 +106,10 @@ defmodule CatFeeder.Stepper do
     prescaleval = trunc(Float.round(25_000_000.0 / 4096.0 / freq) - 1)
     Logger.debug("prescale value is #{prescaleval}")
 
+    # TODO: can this just be a read?
     oldmode = i2c().write_read!(ref, device_addr, <<@mode1>>, 1)
     :timer.sleep(5)
-    # set bit 4 (sleep) to allow setting prescale
+    # set bit 4 (sleep) and bit 0 (ALLCALL) to allow setting prescale e.g. 1 0 0 0 1
     i2c().write(ref, device_addr, <<@mode1, 0x11>>)
     i2c().write(ref, device_addr, <<@prescale, prescaleval>>)
     # un-set sleep bit
@@ -108,6 +122,23 @@ defmodule CatFeeder.Stepper do
   end
 
   @doc """
+    # CCW (per pin diagram)
+    # [ain2, bin1, ain1, bin2]
+
+            A input 1
+              channel 10
+    B input 2       B input 1
+      channel 12      channel 11
+            A input 2
+              channel 9
+
+  There are four essential types of steps you can use with your Motor HAT. All four kinds will work with any unipolar or bipolar stepper motor
+
+    Single Steps - this is the simplest type of stepping, and uses the least power. It uses a single coil to 'hold' the motor in place, as seen in the animated GIF above
+    Double Steps - this is also fairly simple, except instead of a single coil, it has two coils on at once. For example, instead of just coil #1 on, you would have coil #1 and #2 on at once. This uses more power (approx 2x) but is stronger than single stepping (by maybe 25%)
+    Interleaved Steps - this is a mix of Single and Double stepping, where we use single steps interleaved with double. It has a little more strength than single stepping, and about 50% more power. What's nice about this style is that it makes your motor appear to have 2x as many steps, for a smoother transition between steps
+    Microstepping - this is where we use a mix of single stepping with PWM to slowly transition between steps. It's slower than single stepping but has much higher precision. We recommend 8 microstepping which multiplies the # of steps your stepper motor has by 8.
+
 
   Additional turning style info
   Turn style
@@ -141,11 +172,13 @@ defmodule CatFeeder.Stepper do
       else
         steps..1
       end
-    pinput_pattern = if style == :single do
-      @pinput_single
-    else
-      @pinput_double
-    end
+
+    pinput_pattern =
+      if style == :single do
+        @pinput_single
+      else
+        @pinput_double
+      end
 
     Enum.each(
       range,
@@ -192,26 +225,56 @@ defmodule CatFeeder.Stepper do
   end
 
   @doc """
-  TODO: Verify this sentence about the channels and what value they're getting set to.
-  Are all these writes strictly necessary?
+  See PCA9685 docs Table 7
+  For each LED_n register, the 3 most significant bits (7:5) are reserved and indicated as non-writable.
+  E.G. 0 0 0 * * * * *
 
-  The registers for each of the 16 channels are sequential
-  so the address can be calculated as an offset from the first one
+  `LED_n full OFF` takes a (4th) bit value of: _ _ _ 1 * * * *
+  `LED_n full ON` takes a (4th) bit value of: _ _ _ 0 * * * *
+
+  _The registers for each of the 16 channels are sequential_
+  _so the address can be calculated as an offset from the first one_
+
+  I'm still struggling to understand why we're using bitwise operators here instead of sending
+  the desired value. I suspect this has to do with ensuring the value changes as intended.
+  0 &&& 0xff = 0 = `LED_n full ON`
+  0x1000 &&& 0xff = 0
+  0 >>> 8 = 0
+  0x1000 >>> 8 = 16 = 1 0 0 0 0 = `LED_n full OFF`
+  0x0FF0 >>> 8 = 15 = 1 1 1 1
+    I'm not sure. I think this wouldn't change the value of the 4th bit.
+  0x0FF0 &&& 0xff = 240 = 1 1 1 1 0 0 0 0 = `LED_n full OFF`
+
+  Use the first register address (@led0_on_l: 0x06) as the address base in order to calculate
+  the offsets to each register for the current channel.
+
+  E.G LED0_ON_L = 0x06;
+  0x06 + 4 * 9 = 42 = 1 0 1 0 1 0 = 0x2A = LED9_ON_L
+  0x2B LED9_ON_H
+  0x2C LED9_OFF_L
+  0X2D LED9_OFF_H
+
+  TODO: The two LED_ON_L and LED_OFF_L registers might be stepped on by the _H registers.
+  Experimient with not setting anything to these registers to see what happens
   """
   def set_pwm(ref, device_addr, channel, on, off) do
+    # LED_channel_ON_L
     i2c().write(ref, device_addr, <<@led0_on_l + 4 * channel, on &&& 0xFF>>)
-    i2c().write(ref, device_addr, <<@led0_on_h + 4 * channel, on >>> 8>>)
-    i2c().write(ref, device_addr, <<@led0_off_l + 4 * channel, off &&& 0xFF>>)
-    i2c().write(ref, device_addr, <<@led0_off_h + 4 * channel, off >>> 8>>)
+    # LED_channel_ON_H
+    i2c().write(ref, device_addr, <<@led0_on_l + 1 + 4 * channel, on >>> 8>>)
+    # LED_channel_OFF_L
+    i2c().write(ref, device_addr, <<@led0_on_l + 2 + 4 * channel, off &&& 0xFF>>)
+    # LED_channel_OFF_H
+    i2c().write(ref, device_addr, <<@led0_on_l + 3 + 4 * channel, off >>> 8>>)
   end
 
   # The PCA9685 has special registers for setting ALL channels
   # (or 1/3 of them) to the same value.
   def set_all_pwm(ref, device_addr, on, off) do
     i2c().write(ref, device_addr, <<@all_on_l, on &&& 0xFF>>)
-    i2c().write(ref, device_addr, <<@all_on_h, on >>> 8>>)
-    i2c().write(ref, device_addr, <<@all_off_l, off &&& 0xFF>>)
-    i2c().write(ref, device_addr, <<@all_off_h, off >>> 8>>)
+    i2c().write(ref, device_addr, <<@all_on_l + 1, on >>> 8>>)
+    i2c().write(ref, device_addr, <<@all_on_l + 2, off &&& 0xFF>>)
+    i2c().write(ref, device_addr, <<@all_on_l + 3, off >>> 8>>)
   end
 
   defp i2c do

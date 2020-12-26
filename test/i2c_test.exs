@@ -5,7 +5,6 @@ defmodule CatFeeder.I2CTest do
   use ExUnit.Case
   alias Circuits.I2C
 
-
   test "info/0" do
     %{name: name} = I2C.info()
     assert name == :stub
