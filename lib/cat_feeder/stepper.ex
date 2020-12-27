@@ -83,6 +83,8 @@ defmodule CatFeeder.Stepper do
     # turn 50% of revolution interleaved
     ie_x> Stepper.steps(200, motor: 0, style: :interleaved, direction: :forward)
 
+  In the hardwre used for testing, `I2C.detect_devices(ref)` would return two addresses. It did not
+  seem to matter which address was used as the device address, so we're using the first one.
   """
   def steps(steps, opts) when steps > 0 do
     Logger.debug("Starting steps/2 with steps: #{steps} and opts: #{inspect(opts)}")
@@ -168,7 +170,7 @@ defmodule CatFeeder.Stepper do
             channel 9
 
   There are four essential types of steps you can use with your Motor HAT.
-  All four kinds will work with any ~unipolar~ or bipolar stepper motor.
+  All four kinds will work with any unipolar or bipolar stepper motor.
 
   Single Steps - this is the simplest type of stepping, and uses the least power.
     It uses a single coil to 'hold' the motor in place.
@@ -187,23 +189,11 @@ defmodule CatFeeder.Stepper do
   def turn(ref, device_addr, steps, opts) do
     motor = Keyword.get(opts, :motor, 0)
     direction = Keyword.get(opts, :direction, :forward)
+    style = Keyword.get(opts, :style, :double)
     pin_addresses = Map.get(@motor_pins, motor)
-
-    range =
-      if direction == :forward do
-        1..steps
-      else
-        steps..1
-      end
-
-    pinput_pattern =
-      case Keyword.get(opts, :style, :double) do
-        :single -> @pinput_single
-        :interleaved -> interleaved()
-        _ -> @pinput_double
-      end
-
-    mod_value = Enum.count(pinput_pattern)
+    range = range(steps, direction)
+    pinput_pattern = pin_pattern(style)
+    mod_value = mod_val(style)
 
     Enum.each(
       range,
@@ -220,6 +210,16 @@ defmodule CatFeeder.Stepper do
     # Stop all the pins, send 0 values
     set_pins(ref, device_addr, pin_addresses, [0, 0, 0, 0])
   end
+
+  defp range(steps, :forward), do: 1..steps
+  defp range(steps, _), do: steps..1
+
+  defp mod_val(:interleaved), do: 8
+  defp mod_val(_), do: 4
+
+  def pin_pattern(:single), do: @pinput_single
+  def pin_pattern(:interleaved), do: interleaved()
+  def pin_pattern(_), do: @pinput_double
 
   def set_pins(ref, device_addr, [_pwma, ain2_pin, ain1_pin, bin1_pin, bin2_pin, _pwmb], [
         ain2,
@@ -321,6 +321,7 @@ defmodule CatFeeder.Stepper do
   end
 
   _docp = "Allow overriding the I2C module via application config."
+
   defp i2c do
     Application.get_env(:cat_feeder, :i2c_module, I2C)
   end

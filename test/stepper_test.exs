@@ -10,6 +10,7 @@ defmodule CatFeeder.StepperTest do
   setup_all do
     # Set log level to debug for this the I2C tests for helpful added output
     Logger.configure(level: :debug)
+    on_exit(fn -> Logger.configure(level: :info) end)
   end
 
   setup do
@@ -57,23 +58,59 @@ defmodule CatFeeder.StepperTest do
       assert_raise FunctionClauseError, fn -> Stepper.steps(0, motor: 0, direction: :forward) end
       assert_raise FunctionClauseError, fn -> Stepper.steps(-1, motor: 0, direction: :forward) end
     end
+
     test "raises for non-integer steps" do
-      assert_raise ArgumentError, fn -> Stepper.steps(:infinity, motor: 0, direction: :forward) end
+      assert_raise ArgumentError, fn ->
+        Stepper.steps(:infinity, motor: 0, direction: :forward)
+      end
     end
   end
 
   describe "interleaved/0" do
     test "interleave single and double" do
-      assert Stepper.interleaved == %{
-        0 => [1, 1, 0, 0],
-        1 => [0, 1, 0, 0],
-        2 => [0, 1, 1, 0],
-        3 => [0, 0, 1, 0],
-        4 => [0, 0, 1, 1],
-        5 => [0, 0, 0, 1],
-        6 => [1, 0, 0, 1],
-        7 => [1, 0, 0, 0]
-      }
+      assert Stepper.interleaved() == %{
+               0 => [1, 1, 0, 0],
+               1 => [0, 1, 0, 0],
+               2 => [0, 1, 1, 0],
+               3 => [0, 0, 1, 0],
+               4 => [0, 0, 1, 1],
+               5 => [0, 0, 0, 1],
+               6 => [1, 0, 0, 1],
+               7 => [1, 0, 0, 0]
+             }
+    end
+  end
+
+  describe "pin_pattern/0" do
+    test ":single" do
+      assert Stepper.pin_pattern(:single) == %{
+               0 => [0, 1, 0, 0],
+               1 => [0, 0, 1, 0],
+               2 => [0, 0, 0, 1],
+               3 => [1, 0, 0, 0]
+             }
+    end
+
+    test ":double" do
+      assert Stepper.pin_pattern(:double) == %{
+               0 => [1, 1, 0, 0],
+               1 => [0, 1, 1, 0],
+               2 => [0, 0, 1, 1],
+               3 => [1, 0, 0, 1]
+             }
+    end
+
+    test "double by default" do
+      assert Stepper.pin_pattern(:anything) == %{
+               0 => [1, 1, 0, 0],
+               1 => [0, 1, 1, 0],
+               2 => [0, 0, 1, 1],
+               3 => [1, 0, 0, 1]
+             }
+    end
+
+    test "interleaved" do
+      assert Stepper.pin_pattern(:interleaved) == Stepper.interleaved()
     end
   end
 end

@@ -2,7 +2,9 @@
 
 Use Nerves, Stepper Motors, and a Raspberry Pi Zero to drive an automated cat feeder.
 
-I took a lot of inspiration (and some code) from http://wsmoak.net/2016/02/08/stepper-motor-elixir.html
+I took a lot of inspiration from http://wsmoak.net/2016/02/08/stepper-motor-elixir.html (Thanks Wendy.)
+
+Control a stepper motor with [Elixir Circuits I2C](https://github.com/elixir-circuits/circuits_i2c#elixir-circuits---i2c)
 
 ## Targets
 
