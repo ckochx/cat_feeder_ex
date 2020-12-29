@@ -12,8 +12,6 @@ defmodule CatFeeder.Application do
 
     children =
       [
-        # Hook up the Quantum Scheduler
-        CatFeeder.Scheduler
       ] ++ children(target())
 
     Supervisor.start_link(children, opts)
@@ -31,8 +29,8 @@ defmodule CatFeeder.Application do
   def children(_target) do
     [
       # Children for all targets except host
-      # Starts a worker by calling: CatFeeder.Worker.start_link(arg)
-      # {CatFeeder.Worker, arg},
+      # Hook up the GenServer Scheduler
+      {CatFeeder.Scheduler, []},
     ]
   end
 
