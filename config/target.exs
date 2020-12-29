@@ -14,6 +14,39 @@ config :shoehorn,
 
 config :nerves_runtime, :kernel, use_system_registry: false
 
+config :nerves_time, :servers, [
+    "0.pool.ntp.org",
+    "1.pool.ntp.org",
+    "2.pool.ntp.org",
+    "3.pool.ntp.org"
+  ]
+
+config :vintage_net,
+  regulatory_domain: "US",
+  config: [
+    {"usb0", %{type: VintageNetDirect}},
+    {"eth0",
+     %{
+       type: VintageNetEthernet,
+       ipv4: %{method: :dhcp}
+     }},
+     {"wlan0", %{
+       type: VintageNetWiFi,
+       ipv4: %{method: :dhcp},
+       vintage_net_wifi: %{
+         networks: [
+           %{
+             key_mgmt: :wpa_psk,
+             ssid: "CHANGEME",
+             psk: "CHANGEME",
+           }
+         ]
+       }
+     }}
+  ]
+
+# config :nerves_time, earliest_time: ~N[2020-12-28 00:00:00], latest_time: ~N[2023-12-28 00:00:00]
+
 # Erlinit can be configured without a rootfs_overlay. See
 # https://github.com/nerves-project/erlinit/ for more information on
 # configuring erlinit.
@@ -47,20 +80,6 @@ if keys == [],
 config :nerves_ssh,
   authorized_keys: Enum.map(keys, &File.read!/1)
 
-# Configure the network using vintage_net
-# See https://github.com/nerves-networking/vintage_net for more information
-config :vintage_net,
-  regulatory_domain: "US",
-  config: [
-    {"usb0", %{type: VintageNetDirect}},
-    {"eth0",
-     %{
-       type: VintageNetEthernet,
-       ipv4: %{method: :dhcp}
-     }},
-    {"wlan0", %{type: VintageNetWiFi}}
-  ]
-
 config :mdns_lite,
   # The `host` key specifies what hostnames mdns_lite advertises.  `:hostname`
   # advertises the device's hostname.local. For the official Nerves systems, this
@@ -68,7 +87,7 @@ config :mdns_lite,
   # "nerves.local" for convenience. If more than one Nerves device is on the
   # network, delete "nerves" from the list.
 
-  host: [:hostname, "nerves"],
+  host: [:hostname, "nerves_cat_feeder"],
   ttl: 120,
 
   # Advertise the following services over mDNS.
@@ -96,5 +115,4 @@ config :mdns_lite,
 # Import target specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 # Uncomment to use target specific configurations
-
-# import_config "#{Mix.target()}.exs"
+import_config "secret.exs"

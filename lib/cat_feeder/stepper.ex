@@ -198,7 +198,6 @@ defmodule CatFeeder.Stepper do
     Enum.each(
       range,
       fn step ->
-        Logger.debug("turning step #{step}")
         pin_values = Map.get(pinput_pattern, Integer.mod(step, mod_value))
         Logger.debug("#{inspect(pin_values)} -->> Pin pattern to set for step: #{step}")
 
