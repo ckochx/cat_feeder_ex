@@ -6,6 +6,20 @@ I took a lot of inspiration from http://wsmoak.net/2016/02/08/stepper-motor-elix
 
 Control a stepper motor with [Elixir Circuits I2C](https://github.com/elixir-circuits/circuits_i2c#elixir-circuits---i2c)
 
+Additional prose-y documentation in [Rebuild-Docs](docs/Rebuild-Docs.md)
+
+## OTA firmware upgrades
+
+Test the Pi is available:
+`ping nerves_cat_feeder.local`
+
+##### write out the firmware upload script (upload.sh), you only need this done once
+`mix firmware.gen.script`
+##### generate firmware file for the target
+`MIX_TARGET=rpi0 mix firmware`
+##### run the upload script
+`./upload.sh nerves_cat_feeder.local ./_build/rpi0_dev/nerves/images/cat_feeder.fw`
+
 ## Targets
 
 I wrote this code using a Raspberry Pi Zero, so all the real testing was done with that device: `MIX_TARGET=rpi0`
