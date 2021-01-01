@@ -25,7 +25,7 @@ defmodule CatFeeder.StepperTest do
       ref = "ref"
       device_address = 99
 
-      expect(I2CMock, :write, 32, fn ^ref, ^device_address, _ ->
+      expect(I2CMock, :write, 64, fn ^ref, ^device_address, _ ->
         :ok
       end)
 
@@ -33,7 +33,7 @@ defmodule CatFeeder.StepperTest do
     end
 
     test "backward" do
-      expect(I2CMock, :write, 40, fn "ref", 99, _ ->
+      expect(I2CMock, :write, 80, fn "ref", 99, _ ->
         :ok
       end)
 
@@ -69,11 +69,11 @@ defmodule CatFeeder.StepperTest do
   describe "interleaved/0" do
     test "interleave single and double" do
       assert Stepper.interleaved() == %{
-               0 => [1, 1, 0, 0],
-               1 => [0, 1, 0, 0],
+               0 => [1, 0, 1, 0],
+               1 => [0, 0, 1, 0],
                2 => [0, 1, 1, 0],
-               3 => [0, 0, 1, 0],
-               4 => [0, 0, 1, 1],
+               3 => [0, 1, 0, 0],
+               4 => [0, 1, 0, 1],
                5 => [0, 0, 0, 1],
                6 => [1, 0, 0, 1],
                7 => [1, 0, 0, 0]
@@ -84,8 +84,8 @@ defmodule CatFeeder.StepperTest do
   describe "pin_pattern/0" do
     test ":single" do
       assert Stepper.pin_pattern(:single) == %{
-               0 => [0, 1, 0, 0],
-               1 => [0, 0, 1, 0],
+               0 => [0, 0, 1, 0],
+               1 => [0, 1, 0, 0],
                2 => [0, 0, 0, 1],
                3 => [1, 0, 0, 0]
              }
@@ -93,18 +93,18 @@ defmodule CatFeeder.StepperTest do
 
     test ":double" do
       assert Stepper.pin_pattern(:double) == %{
-               0 => [1, 1, 0, 0],
+               0 => [1, 0, 1, 0],
                1 => [0, 1, 1, 0],
-               2 => [0, 0, 1, 1],
+               2 => [0, 1, 0, 1],
                3 => [1, 0, 0, 1]
              }
     end
 
     test "double by default" do
       assert Stepper.pin_pattern(:anything) == %{
-               0 => [1, 1, 0, 0],
+               0 => [1, 0, 1, 0],
                1 => [0, 1, 1, 0],
-               2 => [0, 0, 1, 1],
+               2 => [0, 1, 0, 1],
                3 => [1, 0, 0, 1]
              }
     end

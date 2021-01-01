@@ -24,6 +24,10 @@ defmodule CatFeeder.Stepper do
   Motor1 (M1, M2): ain2 9 bin1 11 ain1 10 bin2 12 pwma 8 pwmb 13
   Motor2 (M3, M4): ain2 3 bin1 5 ain1 4 bin2 6 pwma 2 pwmb 7
 
+  Motor1 (M1, M2): ain2 9 bin1 11 ain1 10 bin2 12 pwma 8 pwmb 13
+
+  Motor2 (M3, M4): ain2 3 bin1 5 ain1 4 bin2 6 pwma 2 pwmb 7
+
   Motor 1 is channels 9 and 10 with 8 held high.
   Motor 2 is channels 11 and 12 with 13 held high.
   Motor 3 is channels 3 and 4 with 2 held high.
@@ -47,17 +51,17 @@ defmodule CatFeeder.Stepper do
     :order => ["pwma", "ain2", "ain1", "bin1", "bin2", "pwmb"]
   }
 
-  # *pin order* "ain2", "bin1", "ain1", "bin2"
+  # *pin order* "ain1", "ain2", "bin1", "bin2"
   @pinput_double %{
-    0 => [1, 1, 0, 0],
+    0 => [1, 0, 1, 0],
     1 => [0, 1, 1, 0],
-    2 => [0, 0, 1, 1],
+    2 => [0, 1, 0, 1],
     3 => [1, 0, 0, 1]
   }
 
   @pinput_single %{
-    0 => [0, 1, 0, 0],
-    1 => [0, 0, 1, 0],
+    0 => [0, 0, 1, 0],
+    1 => [0, 1, 0, 0],
     2 => [0, 0, 0, 1],
     3 => [1, 0, 0, 0]
   }
@@ -89,11 +93,12 @@ defmodule CatFeeder.Stepper do
   def steps(steps, opts) when steps > 0 do
     Logger.debug("Starting steps/2 with steps: #{steps} and opts: #{inspect(opts)}")
     motor = Keyword.get(opts, :motor, 0)
+    frequency = Keyword.get(opts, :frequency, 1600)
     [i2c_bus] = i2c().bus_names()
     {:ok, ref} = i2c().open(i2c_bus)
     [device_addr, _] = i2c().detect_devices(ref)
     init(ref, device_addr)
-    prescale(ref, device_addr, 1600)
+    prescale(ref, device_addr, frequency)
     set_pwm_ab(ref, device_addr, motor)
     turn(ref, device_addr, steps, opts)
     swrst(ref, device_addr)
@@ -202,7 +207,7 @@ defmodule CatFeeder.Stepper do
         Logger.debug("#{inspect(pin_values)} -->> Pin pattern to set for step: #{step}")
 
         set_pins(ref, device_addr, pin_addresses, pin_values)
-        :timer.sleep(10)
+        :timer.sleep(20)
       end
     )
 
@@ -221,14 +226,14 @@ defmodule CatFeeder.Stepper do
   def pin_pattern(_), do: @pinput_double
 
   def set_pins(ref, device_addr, [_pwma, ain2_pin, ain1_pin, bin1_pin, bin2_pin, _pwmb], [
+        ain1,
         ain2,
         bin1,
-        ain1,
         bin2
       ]) do
+    set_pin(ref, device_addr, ain1_pin, ain1)
     set_pin(ref, device_addr, ain2_pin, ain2)
     set_pin(ref, device_addr, bin1_pin, bin1)
-    set_pin(ref, device_addr, ain1_pin, ain1)
     set_pin(ref, device_addr, bin2_pin, bin2)
   end
 
@@ -288,8 +293,10 @@ defmodule CatFeeder.Stepper do
   They may be required when microstepping, which is not yet supported.
   """
   def set_pwm(ref, device_addr, channel, on, off) do
-    # LED#{channel}_ON_L i2c().write(ref, device_addr, <<@led0_on_l + 4 * channel, on &&& 0xFF>>)
-    # LED#{channel}_OFF_L i2c().write(ref, device_addr, <<@led0_on_l + 2 + 4 * channel, off &&& 0xFF>>)
+    # LED#{channel}_ON_L
+    i2c().write(ref, device_addr, <<@led0_on_l + 4 * channel, on &&& 0xFF>>)
+    # LED#{channel}_OFF_L
+    i2c().write(ref, device_addr, <<@led0_on_l + 2 + 4 * channel, off &&& 0xFF>>)
 
     # LED#{channel}_ON_H
     i2c().write(ref, device_addr, <<@led0_on_l + 1 + 4 * channel, on >>> 8>>)
