@@ -22,7 +22,7 @@ defmodule CatFeeder.SchedulerTest do
 
     ts = time.hour * 100 + time.minute
     IO.inspect(ts, label: "timestamp")
-    Application.put_env(:cat_feeder, :schedule, %{ts => fn -> Logger.info "I got called!" end})
+    Application.put_env(:cat_feeder, :schedule, %{ts => fn -> Logger.info("I got called!") end})
 
     assert capture_log(fn -> Scheduler.execute_scheduled_events() end) =~ "[info]  I got called!"
   end

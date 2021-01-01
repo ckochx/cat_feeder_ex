@@ -10,9 +10,7 @@ defmodule CatFeeder.Application do
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: CatFeeder.Supervisor]
 
-    children =
-      [
-      ] ++ children(target())
+    children = [] ++ children(target())
 
     Supervisor.start_link(children, opts)
   end
@@ -30,7 +28,7 @@ defmodule CatFeeder.Application do
     [
       # Children for all targets except host
       # Hook up the GenServer Scheduler
-      {CatFeeder.Scheduler, []},
+      {CatFeeder.Scheduler, []}
     ]
   end
 

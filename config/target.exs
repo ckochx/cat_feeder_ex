@@ -15,11 +15,11 @@ config :shoehorn,
 config :nerves_runtime, :kernel, use_system_registry: false
 
 config :nerves_time, :servers, [
-    "0.pool.ntp.org",
-    "1.pool.ntp.org",
-    "2.pool.ntp.org",
-    "3.pool.ntp.org"
-  ]
+  "0.pool.ntp.org",
+  "1.pool.ntp.org",
+  "2.pool.ntp.org",
+  "3.pool.ntp.org"
+]
 
 config :vintage_net,
   regulatory_domain: "US",
@@ -30,7 +30,8 @@ config :vintage_net,
        type: VintageNetEthernet,
        ipv4: %{method: :dhcp}
      }},
-     {"wlan0", %{
+    {"wlan0",
+     %{
        type: VintageNetWiFi,
        ipv4: %{method: :dhcp},
        vintage_net_wifi: %{
@@ -38,7 +39,7 @@ config :vintage_net,
            %{
              key_mgmt: :wpa_psk,
              ssid: "CHANGEME",
-             psk: "CHANGEME",
+             psk: "CHANGEME"
            }
          ]
        }

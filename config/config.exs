@@ -13,10 +13,9 @@ config :cat_feeder, target: Mix.target()
 
 config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 
-config :cat_feeder, :schedule,
-  %{
-    0330 => &CatFeeder.feed/0
-  }
+config :cat_feeder, :schedule, %{
+  0330 => &CatFeeder.feed/0
+}
 
 config :cat_feeder, :feeding, delay: 4000
 

@@ -41,7 +41,9 @@ defmodule CatFeeder.Scheduler do
       {time, job} ->
         Logger.info("Time=#{time}; time to execute job: #{inspect(job)}")
         job.()
-      _ -> "Nothing to do right now."
+
+      _ ->
+        "Nothing to do right now."
     end
   end
 
