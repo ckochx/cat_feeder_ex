@@ -47,7 +47,7 @@ defmodule CatFeeder.MixProject do
       {:nerves_pack, "~> 0.4.0", targets: @all_targets},
       {:nerves_time, "~> 0.4.2"},
       # We need the TZDB to work with local timezones
-      {:tzdata, "~> 1.0.5"},
+      {:tzdata, "~> 1.1"},
 
       # Dependencies for specific targets
       # Since we're only building on a Pi Zero, lose the other targets
