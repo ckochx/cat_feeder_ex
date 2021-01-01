@@ -14,6 +14,8 @@ config :shoehorn,
 
 config :nerves_runtime, :kernel, use_system_registry: false
 
+config :tzdata, :data_dir, "/root/storage"
+
 config :nerves_time, :servers, [
   "0.pool.ntp.org",
   "1.pool.ntp.org",

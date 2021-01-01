@@ -15,9 +15,9 @@ defmodule CatFeeder do
   """
   def feed do
     IO.puts("Executing the feed")
-    Stepper.steps(72, motor: 0, direction: :forward, style: :interleaved)
-    delay()
-    Stepper.steps(72, motor: 1, direction: :rev, style: :interleaved)
+    Stepper.steps(67, motor: 0, direction: :forward, style: :interleaved)
+    # delay()
+    # Stepper.steps(72, motor: 1, direction: :rev, style: :interleaved)
   end
 
   def feed([{s0, opt0}, {s1, opt1}]) do
