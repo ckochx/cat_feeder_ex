@@ -33,6 +33,16 @@ defmodule CatFeeder.Stepper do
   Motor 3 is channels 3 and 4 with 2 held high.
   Motor 4 is channels 5 and 6 with 7 held high
 
+  * The sequence of control signals for 4 control wires is as follows:
+   *
+   * Step P0 P1 P2 P3
+   *    1  1  0  1  0
+   *    2  0  1  1  0
+   *    3  0  1  0  1
+   *    4  1  0  0  1
+
+  Arduino Stepper.cpp source: https://github.com/arduino-libraries/Stepper/blob/master/src/Stepper.cpp
+
   The diagrams in the tutorial show how the PCA9685 is connected to the TB6612's on the board
   https://learn.adafruit.com/adafruit-dc-and-stepper-motor-hat-for-raspberry-pi?view=all
   """
@@ -207,7 +217,8 @@ defmodule CatFeeder.Stepper do
         Logger.debug("#{inspect(pin_values)} -->> Pin pattern to set for step: #{step}")
 
         set_pins(ref, device_addr, pin_addresses, pin_values)
-        :timer.sleep(20)
+        set_delay(30)
+        |> :timer.sleep()
       end
     )
 
@@ -221,7 +232,7 @@ defmodule CatFeeder.Stepper do
   defp mod_val(:interleaved), do: 8
   defp mod_val(_), do: 4
 
-  def pin_pattern(:single), do: @pinput_single
+  # def pin_pattern(:single), do: @pinput_single
   def pin_pattern(:interleaved), do: interleaved()
   def pin_pattern(_), do: @pinput_double
 
@@ -330,5 +341,10 @@ defmodule CatFeeder.Stepper do
 
   defp i2c do
     Application.get_env(:cat_feeder, :i2c_module, I2C)
+  end
+
+  _docp = "Sets the speed in revs per minute"
+  defp set_delay(what_speed, number_of_steps \\ 200) do
+    _set_delay = trunc(60 * 1000 / number_of_steps / what_speed)
   end
 end

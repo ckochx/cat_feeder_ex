@@ -82,15 +82,6 @@ defmodule CatFeeder.StepperTest do
   end
 
   describe "pin_pattern/0" do
-    test ":single" do
-      assert Stepper.pin_pattern(:single) == %{
-               0 => [0, 0, 1, 0],
-               1 => [0, 1, 0, 0],
-               2 => [0, 0, 0, 1],
-               3 => [1, 0, 0, 0]
-             }
-    end
-
     test ":double" do
       assert Stepper.pin_pattern(:double) == %{
                0 => [1, 0, 1, 0],
