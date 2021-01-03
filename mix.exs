@@ -61,8 +61,9 @@ defmodule CatFeeder.MixProject do
       # {:nerves_system_osd32mp1, "~> 0.4", runtime: false, targets: :osd32mp1},
       # {:nerves_system_x86_64, "~> 1.13", runtime: false, targets: :x86_64},
 
-      # Communicate with RaspberryPi via I2C circuit
+      # Communicate with RaspberryPi via I2C and GPIO circuits
       {:circuits_i2c, "~> 0.1"},
+      {:circuits_gpio, "~> 0.4"},
 
       # Dev and Test Deps
       {:mix_test_watch, "~> 1.0", only: :dev, runtime: false},

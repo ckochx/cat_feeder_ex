@@ -14,6 +14,8 @@ config :shoehorn,
 
 config :nerves_runtime, :kernel, use_system_registry: false
 
+config :nerves, :firmware, rootfs_overlay: "rootfs_overlay"
+
 config :tzdata, :data_dir, "/root/storage"
 
 config :nerves_time, :servers, [
