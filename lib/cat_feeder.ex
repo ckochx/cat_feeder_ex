@@ -3,6 +3,7 @@ defmodule CatFeeder do
   Documentation for CatFeeder.
   """
   alias CatFeeder.Stepper
+  alias CatFeeder.StepperGPIO
 
   @doc """
   Dispense the two feeder stepper motors.
@@ -15,9 +16,11 @@ defmodule CatFeeder do
   """
   def feed do
     IO.puts("Executing the feed")
-    Stepper.steps(67, motor: 0, direction: :forward, style: :interleaved)
-    # delay()
-    # Stepper.steps(72, motor: 1, direction: :rev, style: :interleaved)
+    # Dispense H
+    StepperGPIO.execute(34, 17, 18, 27, 22, [])
+    delay()
+    # Dispense Y
+    StepperGPIO.execute(34, 5, 6, 13, 19, direction: :reverse)
   end
 
   def feed([{s0, opt0}, {s1, opt1}]) do

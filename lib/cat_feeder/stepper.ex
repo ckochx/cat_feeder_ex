@@ -217,6 +217,7 @@ defmodule CatFeeder.Stepper do
         Logger.debug("#{inspect(pin_values)} -->> Pin pattern to set for step: #{step}")
 
         set_pins(ref, device_addr, pin_addresses, pin_values)
+
         set_delay(30)
         |> :timer.sleep()
       end
@@ -344,6 +345,7 @@ defmodule CatFeeder.Stepper do
   end
 
   _docp = "Sets the speed in revs per minute"
+
   defp set_delay(what_speed, number_of_steps \\ 200) do
     _set_delay = trunc(60 * 1000 / number_of_steps / what_speed)
   end

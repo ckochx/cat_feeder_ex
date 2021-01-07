@@ -17,7 +17,7 @@ config :cat_feeder, :schedule, %{
   0330 => &CatFeeder.feed/0
 }
 
-config :cat_feeder, :feeding, delay: 4000
+config :cat_feeder, :feeding, delay: 2000
 
 # Customize non-Elixir parts of the firmware. See
 # https://hexdocs.pm/nerves/advanced-configuration.html for details.

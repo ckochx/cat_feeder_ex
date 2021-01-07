@@ -10,16 +10,6 @@ defmodule CatFeeder.StepperGPIO do
          2  0  1  1  0
          3  0  1  0  1
          4  1  0  0  1
-
-  Half Step P0 P1 P2 P3
-         1  1  0  1  0
-         2  0  0  1  0
-         3  0  1  1  0
-         4  0  1  0  0
-         5  0  1  0  1
-         6  0  0  0  1
-         7  1  0  0  1
-         8  1  0  0  0
   """
 
   @step_values %{
@@ -29,16 +19,35 @@ defmodule CatFeeder.StepperGPIO do
     3 => [1, 0, 0, 1]
   }
 
-  @half_step_values %{
-    0 => [1, 0, 1, 0],
-    1 => [0, 0, 1, 0],
-    2 => [0, 1, 1, 0],
-    3 => [0, 1, 0, 0],
-    4 => [0, 1, 0, 1],
-    5 => [0, 0, 0, 1],
-    6 => [1, 0, 0, 1],
-    7 => [1, 0, 0, 0]
-  }
+  @doc """
+  Manage pins and turn motor.
+  Open each of the four pins, jog the motor 10 steps "backwards" and then steps + 10 forwards.
+  Zero all the pin values, (set to 0, LOW).
+  Close all the pin connections.
+  """
+  def execute(steps, pin0, pin1, pin2, pin3, opts) do
+    {:ok, p0} = GPIO.open(pin0, :output)
+    {:ok, p1} = GPIO.open(pin1, :output)
+    {:ok, p2} = GPIO.open(pin2, :output)
+    {:ok, p3} = GPIO.open(pin3, :output)
+    opts = Keyword.merge(opts, "0": p0, "1": p1, "2": p2, "3": p3)
+
+    jog_steps = 10
+    # Jog backwards first
+    direction = Keyword.get(opts, :direction, :forward)
+    reverse = reverse(direction)
+    turn(jog_steps, Keyword.merge(opts, direction: reverse))
+    :timer.sleep(300)
+    turn(steps + jog_steps, opts)
+
+    :timer.sleep(100)
+    off(opts)
+    :timer.sleep(10)
+    close(opts)
+  end
+
+  defp reverse(:forward), do: :reverse
+  defp reverse(:reverse), do: :forward
 
   @doc """
   Execute N steps, call step to set the correct pin values
@@ -46,9 +55,9 @@ defmodule CatFeeder.StepperGPIO do
   where each of the required pin values is a valid? Circuits Ref ("#Ref<>") to a Pi pin.
   """
   def turn(steps, opts) do
-    style = Keyword.get(opts, :style)
-    Enum.each(0..(steps-1), fn step ->
-      step(step, opts, style)
+    Enum.each(0..(steps - 1), fn step ->
+      step(step, opts)
+      :timer.sleep(10)
     end)
   end
 
@@ -63,38 +72,40 @@ defmodule CatFeeder.StepperGPIO do
     :ok
 
   """
-  def step(step, opts, style \\ :full)
-
-  def step(step, opts, :half) do
-    step = Integer.mod(step, 8)
-    direction = Keyword.get(opts, :direction, :forward)
-    step = if direction == :forward do
-      step
-    else
-      step ^^^ 0b111
-    end
-    step_values = Map.get(@half_step_values, step)
-    Enum.each(0..7, fn half_pin ->
-      pin = Integer.mod(half_pin, 4)
-      ref = Keyword.fetch!(opts, :"#{pin}")
-      val = Enum.at(step_values, pin)
-      GPIO.write(ref, val)
-    end)
-  end
-
-  def step(step, opts, _) do
+  def step(step, opts) do
     step = Integer.mod(step, 4)
     direction = Keyword.get(opts, :direction, :forward)
-    step = if direction == :forward do
-      step
-    else
-      step ^^^ 0b11
-    end
+
+    step =
+      if direction == :forward do
+        step
+      else
+        step ^^^ 0b11
+      end
+
     step_values = Map.get(@step_values, step)
+
     Enum.each(0..3, fn pin ->
       ref = Keyword.fetch!(opts, :"#{pin}")
       val = Enum.at(step_values, pin)
       GPIO.write(ref, val)
+      :timer.sleep(5)
+    end)
+  end
+
+  def off(opts) do
+    Enum.each(0..3, fn pin ->
+      ref = Keyword.fetch!(opts, :"#{pin}")
+
+      GPIO.write(ref, 0)
+    end)
+  end
+
+  def close(opts) do
+    Enum.each(0..3, fn pin ->
+      ref = Keyword.fetch!(opts, :"#{pin}")
+
+      GPIO.close(ref)
     end)
   end
 end

@@ -6,6 +6,8 @@ I took a lot of inspiration from http://wsmoak.net/2016/02/08/stepper-motor-elix
 
 Control a stepper motor with [Elixir Circuits I2C](https://github.com/elixir-circuits/circuits_i2c#elixir-circuits---i2c)
 
+Control a stepper motor with [Elixir Circuits GPIO](https://github.com/elixir-circuits/circuits_gpio)
+
 Additional prose-y documentation in [Rebuild-Docs](docs/Rebuild-Docs.md)
 
 ## OTA firmware upgrades
