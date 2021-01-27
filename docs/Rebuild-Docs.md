@@ -134,3 +134,21 @@ I attempted to document this as much as possible in `CatFeeder.Stepper`
 1) Purchase H-bridges, for a "simpler" interface to the steppers.
 1) There are so many stepper motor driver options.
 1) While the H-bridge may be a bit dumber, it doesn't support and onboard current mitigation or "chopping", I believe it should be sufficient for my needs, and I believe the power supply _should_ help prevent any over-current situations. My use case for these steppers also features very little use. (I.E. one to three times per day for a very short duration) While the torque demands are high, the duty-cycle for these motors is very small and I'm hopeful the Pi + H-bridge configuration should work for my needs.
+
+## Successes:
+
+1) TB67S128FTG Stepper Motor Driver works great!
+
+  A chopper driver is a much better fit for this setup as it regulates the current and prevents the motor from drawing too much.
+  It also delivers all the current the motor can handle, which is fairly significant and could easily overload the H-bridge setup. Also the H-bridge could not supply enough current to drive the larger high torque stepper.
+
+1) The TB67S128FTG manages the individual phase signals!
+
+  This is much better than trying to coordinate all the signals that need to get sent to each coil pair for every step.
+
+### TODOs:
+
+1) Cleanup the wiring.
+1) Create a housing for the boards and wires.
+1) Test running the pi headless via `MIX_TARGET=rpi mix firmware`
+1) Try half stepping
