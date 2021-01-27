@@ -14,10 +14,10 @@ config :cat_feeder, target: Mix.target()
 config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 
 config :cat_feeder, :schedule, %{
-  0330 => &CatFeeder.feed/0
+  0329 => &CatFeeder.drive/0
 }
 
-config :cat_feeder, :feeding, delay: 2000
+config :cat_feeder, :feeding, delay: 3000
 
 # Customize non-Elixir parts of the firmware. See
 # https://hexdocs.pm/nerves/advanced-configuration.html for details.

@@ -2,8 +2,30 @@ defmodule CatFeeder do
   @moduledoc """
   Documentation for CatFeeder.
   """
+  require Logger
   alias CatFeeder.Stepper
   alias CatFeeder.StepperGPIO
+  alias CatFeeder.StepperDriver
+
+
+  @doc """
+  Dispense N feeder stepper motors.
+
+  ## Example (not tested)
+
+    CatFeeder.drive()
+    :ok
+
+  """
+  def drive do
+    # Dispense H
+    opt_h = [enable_pin: 24, standby_pin: 23, jog_steps: 18, direction: :reverse]
+    StepperDriver.execute(40, opt_h)
+    # Dispense Y
+    delay()
+    opt_y = [enable_pin: 16, standby_pin: 26, jog_steps: 18]
+    StepperDriver.execute(40, opt_y)
+  end
 
   @doc """
   Dispense the two feeder stepper motors.
@@ -15,7 +37,6 @@ defmodule CatFeeder do
 
   """
   def feed do
-    IO.puts("Executing the feed")
     # Dispense H
     StepperGPIO.execute(34, 17, 18, 27, 22, [])
     delay()
@@ -24,14 +45,12 @@ defmodule CatFeeder do
   end
 
   def feed([{s0, opt0}, {s1, opt1}]) do
-    IO.puts("Executing the feed")
     Stepper.steps(s0, opt0)
     delay()
     Stepper.steps(s1, opt1)
   end
 
   def feed({s0, opt0}) do
-    IO.puts("Executing the feed")
     Stepper.steps(s0, opt0)
   end
 
