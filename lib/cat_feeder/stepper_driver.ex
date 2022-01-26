@@ -21,7 +21,7 @@ defmodule CatFeeder.StepperDriver do
   Close all the pin connections.
   """
   def execute(steps, opts \\ []) do
-    refs = [dir_ref, step_ref], ena_ref, stby_ref, l0_ref, l1_ref] = open(opts)
+    refs = [dir_ref, step_ref, ena_ref, stby_ref, l0_ref, l1_ref] = open(opts)
 
     enable(ena_ref, stby_ref, l0_ref, l1_ref)
 
@@ -46,21 +46,24 @@ defmodule CatFeeder.StepperDriver do
       opts
       |> Keyword.get(:dir_pin, @dir_pin)
       |> GPIO.open(:output)
+
     {:ok, step_ref} =
-       opts
+      opts
       |> Keyword.get(:step_pin, @step_pin)
       |> GPIO.open(:output)
+
     {:ok, ena_ref} =
       opts
       |> Keyword.fetch!(:enable_pin)
       |> GPIO.open(:output)
+
     {:ok, stby_ref} =
       opts
       |> Keyword.fetch!(:standby_pin)
       |> GPIO.open(:output)
 
     {:ok, l0_ref} =
-       opts
+      opts
       |> Keyword.get(:l0_pin, @l0_pin)
       |> GPIO.open(:output)
 
@@ -69,7 +72,7 @@ defmodule CatFeeder.StepperDriver do
       |> Keyword.get(:l1_pin, @l1_pin)
       |> GPIO.open(:output)
 
-    [dir_ref, step_ref], ena_ref, stby_ref, l0_ref, l1_ref]
+    [dir_ref, step_ref, ena_ref, stby_ref, l0_ref, l1_ref]
   end
 
   defp enable(ena_ref, stby_ref, l0_ref, l1_ref) do
@@ -98,7 +101,7 @@ defmodule CatFeeder.StepperDriver do
   def turn(0, _, _, _), do: :ok
 
   def turn(steps, step_ref, l0, l1) do
-    Enum.each((1..steps), fn _step ->
+    Enum.each(1..steps, fn _step ->
       GPIO.write(step_ref, 1)
       :timer.sleep(10)
       GPIO.write(step_ref, 0)

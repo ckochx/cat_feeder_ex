@@ -43,7 +43,7 @@ defmodule CatFeeder.Scheduler do
         job.()
 
       _ ->
-        "Nothing to do right now."
+        "Nothing to do right meow."
     end
   end
 

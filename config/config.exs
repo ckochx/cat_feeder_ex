@@ -15,6 +15,7 @@ config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 
 config :cat_feeder, :schedule, %{
   0329 => &CatFeeder.drive/0
+  # 2205 => &CatFeeder.drive/0
 }
 
 config :cat_feeder, :feeding, delay: 3000

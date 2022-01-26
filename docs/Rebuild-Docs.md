@@ -5,15 +5,18 @@ I have a cat feeder, version 1.X (where X > 2, and X <= 10). Depending on how yo
 
 ## Goals
 
-1) Nerves. I use elixir daily and really enjoy it, much more than the C code used in the Particle Photon. So the main goal is to use nerves to control the feed.
-  a) Raspberry Pi. Upon review, neves mostly works with Pis. There appear to be other targets supported, but let's not complicate things. MMM pi.
+1) Nerves. I use elixir daily and really enjoy it, much more than the C code used in the Particle Photon. So the main goal is to use nerves to control the feeder.
+  a) Raspberry Pi. Upon review, nerves mostly works with Pis. There appear to be other targets supported, but let's not complicate things. MMM π.
 1) Stepper motors I don't really like the servo interface nor how they work. The ability to control them is not great, their positioning leaves something to be desired and I need a motor that can drive contonually in one direction, which the high-torque servos that I'm currently using cannot.
 1) Rebuild the stand that holds the feeder hoppers. Make it nicer.
 
 ## Current limitations of the existing feeder
-Given an existing cat feeder that uses a particle photon and servo motor that drives a paddle wheel in a hopper containing dry cat food. This cat feeder has gone through multiple iterations using progressivley more powerful servo motors. Currently using the [high-torque servo motors from Adafruit](https://www.adafruit.com/product/1142). This is (probably) on the high end for power generation in the 5V range, and it's still a bit under-powered to drive the paddle wheel through the cat food kibbles, especially when the hopper is full. This high-torque servo is also not a continuous rotation servo, it only rotates through about 170 degrees. The degrees of rotation are more than sufficient for the amount need to successfully dispense. But becuase the servo has to reverse direction, there is no ability to dispense only a single portion. Instead the paddle must be "tuned" to correct initial position so that and the far end of the forward rotation the minimal amount of food falls into the last dispensing section and/or on the return rotation little-to-no food is dispensed. This entire tuning operation is fraught at best.
+
+I have an existing cat feeder that I build and which uses a particle photon and servo motor that drives a paddle wheel in a hopper containing dry cat food. This cat feeder has gone through multiple iterations using progressivley more powerful servo motors. Currently using the [high-torque servo motors from Adafruit](https://www.adafruit.com/product/1142). This is (probably) on the high end for power generation in the 5V range, and it's still a bit under-powered to drive the paddle wheel through the cat food kibbles, especially when the hopper is full. This high-torque servo is also not a continuous rotation servo, it only rotates through about 170 degrees. The degrees of rotation are more than sufficient for the amount need to successfully dispense. But becuase the servo has to reverse direction, there is no ability to dispense only a single portion. Instead the paddle must be "tuned" to correct initial position so that and the far end of the forward rotation the minimal amount of food falls into the last dispensing section and/or on the return rotation little-to-no food is dispensed. This entire tuning operation is fraught at best.
 
 There is also a minor performance issue with the forward and backward action of the feeder paddles, and i suspect the food would dispense with fewer issues if the paddle feeder only rotates in one direction. I.E. the paddle is always driving food into the next section and filling up the staged section.
+
+Another factor against the particle photon controller is under that hood it uses an over the air (OTA) API in order to update the photon, it also seems like the photon needs an internet connection in order to actually work. This is not ideal. It's nice to have internet access but the control board needs to be more reliable in the event of internet or WIFI dropout.
 
 While the current iteration is reasonably stable, the unexpected failure of a servo has provided an opportunity to iterate again an gain a new understanding of a technology in which I have had more than passing interest for some time: [Nerves!](https://www.nerves-project.org/) I can also try out a new motor which I have been aware of for a much shorter period of time: [stepper motors](https://www.adafruit.com/product/324). Finally, this will be an opportinty to experiment with a new micro-computer board and finally jump on the Raspberry Pi wagon.
 
@@ -29,11 +32,13 @@ New hardware:
   #### More steppers
   ##### Hardware development is challenging!
   - [High Torque Steppers](https://smile.amazon.com/gp/product/B00QGBUO1C)
+  - [TB67S128FTG Stepper Motor Driver Carrier](https://www.pololu.com/product/2998)
+  - [Another power supply 24V 2A](https://smile.amazon.com/gp/product/B08HQS8TS4/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1)
 
 New software:
 
   - [Nerves](https://hexdocs.pm/nerves/getting-started.html)
-  - [Stepper motor drivers](#?link=TBD)
+  - [Stepper motor drivers](Unecessary)
   - [Elixir Circuits - I2C](https://github.com/elixir-circuits/circuits_i2c)
 
 Helpful references and links
@@ -43,6 +48,8 @@ Helpful references and links
   - [I2C Technical ref](https://elixir.bootlin.com/linux/v5.10.1/source/Documentation/i2c/dev-interface.rst)
   - (https://brandonb.ca/raspberry-pi-zero-w-headless-setup-on-macos)
   - [PCA9685 Chip reference](https://cdn-shop.adafruit.com/datasheets/PCA9685.pdf)
+  - [TB67S128FTG Stepper Motor Driver Carrier](https://www.pololu.com/file/0J1697/TB67S128FTG_datasheet_en_20180612.pdf)
+
 ## Initial setup
 
 1) Install Nerves: `mix archive.install hex nerves_bootstrap`
@@ -57,7 +64,7 @@ Helpful references and links
   Answer) Lot's of mocking and stubbing
 1) Figure out how to drive a stepper motor.
 
-## How do I RaspberryPi?
+## How do I Raspberryπ?
 
 Acquire a microsd card. I thought I had a few cards that came with a camera somewhere, but apparently they are all lost and gone. Buy more.
 
@@ -77,29 +84,26 @@ And to ssh: `ssh nerves_cat_feeder.local`
 
 SSH sends you to an `iex>` prompt with all your nerves code loaded.
 
+After updating the SD card by removing it and inserting it into my computer (rinse and repeat), I read more! I learned you can OTA your firmware update via SSH.
+
+Run `mix firmware.gen.script` to create an upload script. Then when you have new changes to go to the RPi, burn a new firmware and OTA it.
+
+* `MIX_TARGET=rpi0 mix firmware.burn`
+
+* `./upload.sh nerves_cat_feeder.local ./_build/rpi0_dev/nerves/images/cat_feeder.fw`
+
 ## Wiring Hat to Stepper
 
-Per Adafruit, there are two pairs of controllers for the stepper: red/yellow and green/gray (or green/brown)
+The motor controllers must be powered separately from the pi. If you send 12 or 24 V to the pi it will die and maybe even explode! The motor controller takes a 24v power supply for the steppers. A neat feature of the TB67S128FTG board is current limiting via a potentiometer. This helps ensure that you don't send more current to the steppers than they can take. Given my non-continuous usage with very long (23 + hour) breaks, I feel I could safely overclock the stepper, but when the whole system was finally tuned, there was no need to go above the recommended max current.
 
-The I2C ports on the hat have two marks, in my case M1/M2 and M3/M4. The center pin on each hat controller is the ground pin, marked GND.
-
-The motor hat is powered separately from the pi. The hat takes a 12v power supply for the steppers.
-
-`I2C.detect_devices` returns two addresses: 0x60 and 0x70. I'm not sure to what extent these addresses would be different on different hardware. However it appears not to matter which device address is used the steppers will turn as long as the correct pin addresses are used.
-
-Per raspberry pi documentation:
-```
-Motor1 (M1, M2): ain1: 10 ain2: 9 bin1: 11 bin2: 12 pwma: 8 pwmb: 13
-Motor2 (M3, M4): ain1: 4 ain2: 3 bin1: 5 bin2: 6 pwma: 2 pwmb: 7
-```
+A neat trick I learned to determine which pair of wired form a coil in the stepper (if you do not have a diagram for your stepper) is to short two wires together. When your coil forms a loop, the resistance in the stepper will increase. If you short both pairs, then the resistance at the drive shaft becomes very high.
 
 ## Controlling the stepper
 
-Connecting the stepper and getting it into a state where it could turn was reasonable enough.
+Updated documentation for the TB67S128FTG Motor Driver board lives in `CatFeeder.StepperDriver`.
 
-However understanding the low-level bit twiddling required in order to turn the stepper is proving challenging. At the first pass, there's a lot of copy-paste code that is writing a (what seems like) way too many events to the I2C bus.
+Ultimately, using the TB67S128FTG board made controlling the stepper much easier. It is as simple as sending drive pulses to the motor board via several pins on the pi wored directly to the board.
 
-I attempted to document this as much as possible in `CatFeeder.Stepper`
 
 ## Issues as they arise in the build
 
@@ -130,14 +134,14 @@ I attempted to document this as much as possible in `CatFeeder.Stepper`
   Given my usage requires high torque and relatively low precision, standard double and interleaved stepping should suffice for my needs.
 1) _Hardware is always super challenging_. In testing the steppers, I (somehow) created or caused a short on the pi motor bonnet, there was smoke! I assumed that I had nuked the bonnet, probably the pi, and one or more of the motors for good measure. Fortunately only one of the motor driver ports appears to have been affected. The pi still works as does one of the stepper ports.
 1) "Correcting" the stepping order and using double stepping is better, especially on the original smaller stepper motor. There is still some stalling with the larger steppers, but I suspect that is due to too low current. The steppers require 2.1A while the bonnet only delivers 1.2A. More upgrades!
-1) Acquire a larger 36V 4A power supply.
+1) Acquire a larger 36V 4A power supply (this is too much and blew up my H-bridges)
 1) Purchase H-bridges, for a "simpler" interface to the steppers.
 1) There are so many stepper motor driver options.
 1) While the H-bridge may be a bit dumber, it doesn't support and onboard current mitigation or "chopping", I believe it should be sufficient for my needs, and I believe the power supply _should_ help prevent any over-current situations. My use case for these steppers also features very little use. (I.E. one to three times per day for a very short duration) While the torque demands are high, the duty-cycle for these motors is very small and I'm hopeful the Pi + H-bridge configuration should work for my needs.
 
 ## Successes:
 
-1) TB67S128FTG Stepper Motor Driver works great!
+1) TB67S128FTG Stepper Motor Driver works great using a 24V 2A power supply!
 
   A chopper driver is a much better fit for this setup as it regulates the current and prevents the motor from drawing too much.
   It also delivers all the current the motor can handle, which is fairly significant and could easily overload the H-bridge setup. Also the H-bridge could not supply enough current to drive the larger high torque stepper.

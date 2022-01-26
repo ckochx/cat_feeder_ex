@@ -7,7 +7,6 @@ defmodule CatFeeder do
   alias CatFeeder.StepperGPIO
   alias CatFeeder.StepperDriver
 
-
   @doc """
   Dispense N feeder stepper motors.
 

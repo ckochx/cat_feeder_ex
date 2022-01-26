@@ -16,7 +16,7 @@ Test the Pi is available:
 `ping nerves_cat_feeder.local`
 
 ##### write out the firmware upload script (upload.sh), you only need this done once
-`mix firmware.gen.script`
+`MIX_TARGET=rpi0 mix firmware.gen.script`
 ##### generate firmware file for the target
 `MIX_TARGET=rpi0 mix firmware`
 ##### run the upload script

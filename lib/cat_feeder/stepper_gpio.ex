@@ -80,7 +80,7 @@ defmodule CatFeeder.StepperGPIO do
       if direction == :forward do
         step
       else
-        step ^^^ 0b11
+        bxor(step, 0b11)
       end
 
     step_values = Map.get(@step_values, step)
