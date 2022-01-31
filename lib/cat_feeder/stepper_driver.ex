@@ -14,6 +14,11 @@ defmodule CatFeeder.StepperDriver do
   @l0_pin 17
   @l1_pin 27
 
+  def exec(opts) do
+    steps = Keyword.get(opts, :steps, 33)
+    execute(steps, opts)
+  end
+
   @doc """
   Manage pins and turn motor.
   Open each of the pins, jog the motor N steps "backward" and then steps + N forward.
@@ -25,16 +30,22 @@ defmodule CatFeeder.StepperDriver do
 
     enable(ena_ref, stby_ref, l0_ref, l1_ref)
 
+    refs = refs ++ [set_step_type(opts)]
+
     dir = Keyword.get(opts, :direction, :forward)
     reverse = reverse(dir)
     # Set direction inverse to opts dir
     GPIO.write(dir_ref, dir_val(reverse))
-    # Jog N steps backwards first
-    jog_steps = Keyword.get(opts, :jog_steps, 0)
+    # Jog backwards first
+    jog_steps = opts
+    |> Keyword.get(:jog_steps, 0)
+    |> set_step_value(opts)
     turn(jog_steps, step_ref, l0_ref, l1_ref)
     :timer.sleep(500)
     # Set direction pin value
     GPIO.write(dir_ref, dir_val(dir))
+    steps = set_step_value(steps, opts)
+
     turn(steps + jog_steps, step_ref, l0_ref, l1_ref)
 
     :timer.sleep(100)
@@ -79,9 +90,62 @@ defmodule CatFeeder.StepperDriver do
     # write enable and standby to HIGH to enable the driver board
     GPIO.write(ena_ref, 1)
     GPIO.write(stby_ref, 1)
-    # write the error pins to HIGH to enable error detaction
+    # write the error pins to HIGH to enable error detection
     GPIO.write(l0_ref, 1)
     GPIO.write(l1_ref, 1)
+  end
+
+  # maybe handle 1/16, etc steps
+  def set_step_type(opts) do
+    case Keyword.get(opts, :step_type, :full) do
+      :full -> :noop_mode_pin
+
+      :half ->
+        # write MODE0 pin to HIGH
+        opts
+        |> Keyword.get(:m0_pin, 25)
+        |> GPIO.open(:output)
+        |> then(fn {_, ref} ->
+          GPIO.write(ref, 1)
+          ref
+        end)
+
+      :quarter ->
+        # write MODE1 pin to HIGH
+        opts
+        |> Keyword.get(:m1_pin, 25)
+        |> GPIO.open(:output)
+        |> then(fn {_, ref} ->
+          GPIO.write(ref, 1)
+          ref
+        end)
+
+      :eighth ->
+        # write MODE2 pin to HIGH
+        opts
+        |> Keyword.get(:m2_pin, 25)
+        |> GPIO.open(:output)
+        |> then(fn {_, ref} ->
+          GPIO.write(ref, 1)
+          ref
+        end)
+    end
+  end
+
+  def set_step_value(steps, opts) do
+    step_type = Keyword.get(opts, :step_type, :full)
+    steps = case step_type do
+      :full -> steps
+      :half -> steps * 2
+      :quarter -> steps * 4
+      :eighth -> steps * 8
+    end
+    if Keyword.get(opts, :debug, false) do
+      Logger.info("Step type: #{step_type}")
+      Logger.info("Turning steps: #{steps}")
+    end
+    steps
+
   end
 
   defp reverse(:forward), do: :reverse
@@ -103,9 +167,9 @@ defmodule CatFeeder.StepperDriver do
   def turn(steps, step_ref, l0, l1) do
     Enum.each(1..steps, fn _step ->
       GPIO.write(step_ref, 1)
-      :timer.sleep(10)
+      :timer.sleep(5)
       GPIO.write(step_ref, 0)
-      :timer.sleep(10)
+      :timer.sleep(5)
       detect_err(l0, l1)
     end)
   end
@@ -130,10 +194,25 @@ defmodule CatFeeder.StepperDriver do
     Logger.warn("Error detected, pin 1 value: #{v1}")
   end
 
-  def close([dir_ref, step_ref, ena_ref, stby_ref, l0_ref, l1_ref]) do
-    # write enable and standby to LOW to disable the board
+  def close([dir_ref, step_ref, ena_ref, stby_ref, l0_ref, l1_ref, :noop_mode_pin]) do
+    # write enable, standby, and mode to LOW to disable the board
     GPIO.write(ena_ref, 0)
     GPIO.write(stby_ref, 0)
+
+    # Close all the pin connections
+    GPIO.close(l0_ref)
+    GPIO.close(l1_ref)
+    GPIO.close(ena_ref)
+    GPIO.close(stby_ref)
+    GPIO.close(dir_ref)
+    GPIO.close(step_ref)
+  end
+
+  def close([dir_ref, step_ref, ena_ref, stby_ref, l0_ref, l1_ref, mode_ref]) do
+    # write enable, standby, and mode to LOW to disable the board
+    GPIO.write(ena_ref, 0)
+    GPIO.write(stby_ref, 0)
+    GPIO.write(mode_ref, 0)
 
     # Close all the pin connections
     GPIO.close(l0_ref)
