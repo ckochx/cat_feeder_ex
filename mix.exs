@@ -4,7 +4,6 @@ defmodule CatFeeder.MixProject do
   @app :cat_feeder
   @version "0.1.0"
   @all_targets [:rpi0]
-  # @all_targets [:rpi, :rpi0, :rpi2, :rpi3, :rpi3a, :rpi4, :bbb, :osd32mp1, :x86_64]
 
   def project do
     [
@@ -37,7 +36,7 @@ defmodule CatFeeder.MixProject do
   defp deps do
     [
       # Dependencies for all targets
-      {:nerves, "~> 1.7.0", runtime: false},
+      {:nerves, "~> 1.7", runtime: false},
       {:shoehorn, "~> 0.7.0"},
       {:ring_logger, "~> 0.8.1"},
       {:toolshed, "~> 0.2.13"},
@@ -53,13 +52,6 @@ defmodule CatFeeder.MixProject do
       # Since we're only building on a Pi Zero, lose the other targets
       {:nerves_system_rpi0, "~> 1.13", runtime: false, targets: :rpi0},
       {:nerves_system_rpi, "~> 1.13", runtime: false, targets: :rpi},
-      # {:nerves_system_rpi2, "~> 1.13", runtime: false, targets: :rpi2},
-      # {:nerves_system_rpi3, "~> 1.13", runtime: false, targets: :rpi3},
-      # {:nerves_system_rpi3a, "~> 1.13", runtime: false, targets: :rpi3a},
-      # {:nerves_system_rpi4, "~> 1.13", runtime: false, targets: :rpi4},
-      # {:nerves_system_bbb, "~> 2.8", runtime: false, targets: :bbb},
-      # {:nerves_system_osd32mp1, "~> 0.4", runtime: false, targets: :osd32mp1},
-      # {:nerves_system_x86_64, "~> 1.13", runtime: false, targets: :x86_64},
 
       # Communicate with RaspberryPi via I2C and GPIO circuits
       {:circuits_i2c, "~> 0.1"},
