@@ -15,24 +15,33 @@ defmodule CatFeeder.Application do
     Supervisor.start_link(children, opts)
   end
 
-  # List all child processes to be supervised
-  def children(:host) do
-    [
-      # Children that only run on the host
-      # Starts a worker by calling: CatFeeder.Worker.start_link(arg)
-      # {CatFeeder.Worker, arg},
-    ]
-  end
-
   def children(_target) do
+    source = {:service_account, credentials(), [scopes: scopes]}
+
     [
       # Children for all targets except host
       # Hook up the GenServer Scheduler
-      {CatFeeder.Scheduler, []}
+      {CatFeeder.Scheduler, []},
+      {Goth, name: CatFeeder.Goth, source: source}
     ]
   end
 
   def target do
     Application.get_env(:cat_feeder, :target)
+  end
+
+  defp scopes do
+    [
+      "https://www.googleapis.com/auth/drive",
+      "https://www.googleapis.com/auth/drive.file",
+      "https://www.googleapis.com/auth/drive.readonly",
+      "https://www.googleapis.com/auth/drive.metadata.readonly",
+      "https://www.googleapis.com/auth/drive.metadata",
+      "https://www.googleapis.com/auth/drive.photos.readonly"
+    ]
+  end
+
+  defp credentials do
+    File.read!("config/.google_auth.json") |> Jason.decode!()
   end
 end
