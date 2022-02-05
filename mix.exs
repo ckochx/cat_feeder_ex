@@ -45,8 +45,8 @@ defmodule CatFeeder.MixProject do
       {:nerves_runtime, "~> 0.11.3", targets: @all_targets},
       {:nerves_pack, "~> 0.4.0", targets: @all_targets},
       {:nerves_time, "~> 0.4.2"},
-      # We need the TZDB to work with local timezones
-      {:tzdata, "~> 1.1"},
+      # We need a TZDB to work with local timezones
+      {:nerves_time_zones, "~> 0.1.2"},
 
       # Dependencies for specific targets
       # Since we're only building on a Pi Zero, lose the other targets
@@ -56,6 +56,13 @@ defmodule CatFeeder.MixProject do
       # Communicate with RaspberryPi via I2C and GPIO circuits
       {:circuits_i2c, "~> 0.1"},
       {:circuits_gpio, "~> 0.4"},
+
+      # GoogleDrive packages
+      {:goth, "~> 1.3-rc"},
+      {:hackney, ">= 1.17.0"},
+      {:google_api_drive, ">= 0.22.0"},
+      # Camera Control
+      {:picam, "~> 0.4.0"},
 
       # Dev and Test Deps
       {:mix_test_watch, "~> 1.0", only: :dev, runtime: false},

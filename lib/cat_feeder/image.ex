@@ -11,8 +11,9 @@ defmodule CatFeeder.Image do
   end
 
   defp upload(name) do
-    todays_folder
+    folder = todays_folder()
     path = Path.join(System.tmp_dir!, ["images", name])
 
     CatFeeder.Uploader.Drive.create_file(path, name, folder.id)
   end
+end

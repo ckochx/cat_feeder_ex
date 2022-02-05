@@ -11,7 +11,10 @@ Application.start(:nerves_bootstrap)
 
 config :cat_feeder, target: Mix.target()
 
-config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
+data_dir = Path.join(System.tmp_dir!, "nerves_time_zones")
+config :nerves_time_zones,
+  data_dir: data_dir,
+  default_time_zone: "America/Chicago"
 
 config :cat_feeder, :schedule, %{
   0330 => &CatFeeder.drive/0

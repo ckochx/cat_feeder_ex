@@ -14,7 +14,7 @@ defmodule CatFeeder.Uploader.Folders do
     case find_folder(files.files, name) do
       %GFile{} = file -> file
       _ ->
-        {:ok, %GFile{} = file} = create_folder(name, uploads_folder_id(), description: "Today's folder created by the CatFeeder.Uploader app")
+        {:ok, %GFile{} = file} = Drive.create_folder(name, uploads_folder_id(), description: "Today's folder created by the CatFeeder.Uploader app")
         file
       end
   end

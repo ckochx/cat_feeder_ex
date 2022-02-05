@@ -16,7 +16,7 @@ defmodule CatFeeder.Application do
   end
 
   def children(_target) do
-    source = {:service_account, credentials(), [scopes: scopes]}
+    source = {:service_account, credentials(), [scopes: scopes()]}
 
     [
       # Children for all targets except host
