@@ -42,6 +42,6 @@ defmodule CatFeeder.Application do
   end
 
   defp credentials do
-    File.read!("config/.google_auth.json") |> Jason.decode!()
+    Application.get_env(:goth, :json) |> Jason.decode!()
   end
 end
