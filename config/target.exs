@@ -83,7 +83,7 @@ if keys == [],
 config :nerves_ssh,
   authorized_keys: Enum.map(keys, &File.read!/1)
 
-hostname = "nerves_K_feeder"
+hostname = "nerves_cam_feeder"
 hostname |> IO.inspect(label: "hostname")
 
 config :cat_feeder, [hostname: hostname]

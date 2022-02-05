@@ -32,6 +32,9 @@ defmodule CatFeeder do
       Logger.info opt_k
     end
     StepperDriver.exec(opt_k)
+    Task.async(fn -> :timer.sleep(30_000); CatFeeder.Image.capture("kisooni01a.jpg") end)
+    Task.async(fn -> :timer.sleep(60_000); CatFeeder.Image.capture("kisooni02.jpg") end)
+    Task.async(fn -> :timer.sleep(90_000); CatFeeder.Image.capture("kisooni03.jpg") end)
   end
 
   def drive(_, opts) do
@@ -49,6 +52,10 @@ defmodule CatFeeder do
     end
 
     StepperDriver.exec(opt_y)
+
+    Task.async(fn -> :timer.sleep(30_000); CatFeeder.Image.capture("yoki_hayangi01.jpg") end)
+    Task.async(fn -> :timer.sleep(60_000); CatFeeder.Image.capture("yoki_hayangi02.jpg") end)
+    Task.async(fn -> :timer.sleep(90_000); CatFeeder.Image.capture("yoki_hayangi03.jpg") end)
   end
 
   defp get_key("nerves_K_feeder"), do: :kisooni
