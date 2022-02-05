@@ -18,9 +18,15 @@ Test the Pi is available:
 ##### write out the firmware upload script (upload.sh), you only need this done once
 `MIX_TARGET=rpi0 mix firmware.gen.script`
 ##### generate firmware file for the target
-`MIX_TARGET=rpi0 mix firmware`
+
+#####  Set `NERVES_HOSTNAME` to name the running embedded system
+
+  For example `NERVES_HOSTNAME=nerves_cat_cam_feeder`
+
+`MIX_TARGET=rpi0 NERVES_HOSTNAME=nerves_TEST mix firmware`
+
 ##### run the upload script
-`./upload.sh nerves_cat_feeder.local ./_build/rpi0_dev/nerves/images/cat_feeder.fw`
+`./upload.sh "$NERVES_HOSTNAME".local ./_build/rpi0_dev/nerves/images/cat_feeder.fw`
 
 ## Targets
 
@@ -35,6 +41,8 @@ All of this logic is in the generated `mix.exs` and may be customized. For more
 information about targets see:
 
 https://hexdocs.pm/nerves/targets.html#content
+
+Hostname: HOSTNAME=nerves_cam_feeder
 
 ## Getting Started
 

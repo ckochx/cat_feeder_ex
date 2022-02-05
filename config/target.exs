@@ -16,8 +16,6 @@ config :nerves_runtime, :kernel, use_system_registry: false
 
 config :nerves, :firmware, rootfs_overlay: "rootfs_overlay"
 
-config :tzdata, :data_dir, "/root/storage"
-
 config :nerves_time, :servers, [
   "0.pool.ntp.org",
   "1.pool.ntp.org",
@@ -85,6 +83,11 @@ if keys == [],
 config :nerves_ssh,
   authorized_keys: Enum.map(keys, &File.read!/1)
 
+hostname = CatFeeder.MixProject.hostname()
+IO.inspect(hostname, label: "hostname")
+
+config :cat_feeder, [hostname: hostname]
+
 config :mdns_lite,
   # The `host` key specifies what hostnames mdns_lite advertises.  `:hostname`
   # advertises the device's hostname.local. For the official Nerves systems, this
@@ -92,7 +95,7 @@ config :mdns_lite,
   # "nerves.local" for convenience. If more than one Nerves device is on the
   # network, delete "nerves" from the list.
 
-  host: [:hostname, "nerves_cat_feeder"],
+  host: [:hostname, hostname],
   ttl: 120,
 
   # Advertise the following services over mDNS.
