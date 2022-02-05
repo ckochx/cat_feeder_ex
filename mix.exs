@@ -80,4 +80,8 @@ defmodule CatFeeder.MixProject do
       strip_beams: Mix.env() == :prod
     ]
   end
+
+  def hostname do
+    System.get_env("HOSTNAME", "nerves_DEFAULT_feeder")
+  end
 end

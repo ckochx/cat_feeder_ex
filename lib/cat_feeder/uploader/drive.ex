@@ -41,23 +41,6 @@ defmodule CatFeeder.Uploader.Drive do
     )
   end
 
-  # def create_file(path, filename, parent_id, opts \\ []) do
-  #   {mime, binary} = CatFeeder.Uploader.File.file(path)
-  #   # Create a file from iodata
-  #   {:ok, _file} = GFiles.drive_files_create_iodata(
-  #     conn(),
-  #     "multipart",
-  #     %GFile{
-  #       folderColorRgb: @rainy_sky_blue,
-  #       name: filename,
-  #       parents: [parent_id],
-  #       mimeType: mime,
-  #       description: Keyword.get(opts, :description)
-  #     },
-  #     binary
-  #   )
-  # end
-
   def delete_by_id(id) do
     GFiles.drive_files_delete(conn(), id)
   end

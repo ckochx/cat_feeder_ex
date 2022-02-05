@@ -6,12 +6,13 @@ defmodule CatFeeder.Camera do
   @doc """
   """
   def image(name \\ "frame.jpg") do
-    {:ok, pid} = Picam.Camera.start_link()
+    {:ok, cam_pid} = Picam.Camera.start_link()
+
     path = Path.join(System.tmp_dir!, "images")
     defaults(path)
     File.write!(Path.join(path, name), Picam.next_frame)
 
-    Supervisor.stop(pid)
+    Supervisor.stop(cam_pid)
   end
 
   defp defaults(path) do

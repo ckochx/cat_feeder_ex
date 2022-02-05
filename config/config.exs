@@ -17,8 +17,8 @@ config :nerves_time_zones,
   default_time_zone: "America/Chicago"
 
 config :cat_feeder, :schedule, %{
-  0330 => &CatFeeder.drive/0
-  # 2128 => &CatFeeder.drive/0
+  0330 => &CatFeeder.drive/0,
+  0611 => &CatFeeder.Uploader.Folders.purge_old_folders/0
 }
 
 config :cat_feeder, :feeding, delay: 3000

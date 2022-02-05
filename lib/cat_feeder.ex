@@ -25,19 +25,18 @@ defmodule CatFeeder do
     |> drive(opts)
   end
 
-  def drive(:kisooni, opts) do
+  def drive(:kisooni = target, opts) do
     # Dispense K
     opt_k = Keyword.merge([enable_pin: 16, standby_pin: 26, jog_steps: 18, direction: :reverse, m0_pin: 25, m1_pin: 23, m2_pin: 24], opts)
     if Keyword.get(opts, :debug, false) do
       Logger.info opt_k
     end
     StepperDriver.exec(opt_k)
-    Task.async(fn -> :timer.sleep(30_000); CatFeeder.Image.capture("kisooni01a.jpg") end)
-    Task.async(fn -> :timer.sleep(60_000); CatFeeder.Image.capture("kisooni02.jpg") end)
-    Task.async(fn -> :timer.sleep(90_000); CatFeeder.Image.capture("kisooni03.jpg") end)
+
+    async_images(target)
   end
 
-  def drive(_, opts) do
+  def drive(target, opts) do
     # Dispense H
     opt_h = Keyword.merge([enable_pin: 24, standby_pin: 23, jog_steps: 18, direction: :reverse], opts)
     if Keyword.get(opts, :debug, false) do
@@ -53,13 +52,18 @@ defmodule CatFeeder do
 
     StepperDriver.exec(opt_y)
 
-    Task.async(fn -> :timer.sleep(30_000); CatFeeder.Image.capture("yoki_hayangi01.jpg") end)
-    Task.async(fn -> :timer.sleep(60_000); CatFeeder.Image.capture("yoki_hayangi02.jpg") end)
-    Task.async(fn -> :timer.sleep(90_000); CatFeeder.Image.capture("yoki_hayangi03.jpg") end)
+    async_images(target)
+  end
+
+  defp async_images(target) do
+    name = Atom.to_string(target)
+    Task.async(fn -> :timer.sleep(30_000); CatFeeder.Image.capture("#{name}01.jpg") end)
+    Task.async(fn -> :timer.sleep(30_000); CatFeeder.Image.capture("#{name}02.jpg") end)
+    Task.async(fn -> :timer.sleep(30_000); CatFeeder.Image.capture("#{name}03.jpg") end)
   end
 
   defp get_key("nerves_K_feeder"), do: :kisooni
-  defp get_key(any), do: any
+  defp get_key(_any), do: :yoki_hayangi
 
   @doc """
   Dispense the two feeder stepper motors.
