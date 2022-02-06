@@ -99,10 +99,10 @@ defmodule CatFeeder do
     Stepper.steps(s0, opt0)
   end
 
-  defp delay(key // :delay) do
+  defp delay(key \\ :delay) do
     :cat_feeder
     |> Application.get_env(:feeding, [])
-    |> Keyword.get(:key, 5000)
+    |> Keyword.get(key, 5000)
     |> :timer.sleep()
   end
 end
