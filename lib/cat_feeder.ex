@@ -25,8 +25,9 @@ defmodule CatFeeder do
     |> drive(opts)
   end
 
-  def drive(:kisooni = target, opts) do
-    # Dispense K
+  def drive("kisooni" = target, opts) do
+    # Dispense Kisooni's feeder after a delay
+    delay(:k_delay)
     opt_k = Keyword.merge([enable_pin: 16, standby_pin: 26, jog_steps: 18, direction: :reverse, m0_pin: 25, m1_pin: 23, m2_pin: 24], opts)
     if Keyword.get(opts, :debug, false) do
       Logger.info opt_k
@@ -37,13 +38,13 @@ defmodule CatFeeder do
   end
 
   def drive(target, opts) do
-    # Dispense H
+    # Dispense Hayangi's feeder
     opt_h = Keyword.merge([enable_pin: 24, standby_pin: 23, jog_steps: 18, direction: :reverse], opts)
     if Keyword.get(opts, :debug, false) do
       Logger.info opt_h
     end
     StepperDriver.exec(opt_h)
-    # Dispense Y
+    # Dispense Yoki's feeder
     delay()
     opt_y = Keyword.merge([enable_pin: 16, standby_pin: 26, jog_steps: 18], opts)
     if Keyword.get(opts, :debug, false) do
@@ -56,14 +57,20 @@ defmodule CatFeeder do
   end
 
   defp async_images(target) do
-    name = Atom.to_string(target)
-    Task.async(fn -> :timer.sleep(30_000); CatFeeder.Image.capture("#{name}01.jpg") end)
-    Task.async(fn -> :timer.sleep(30_000); CatFeeder.Image.capture("#{name}02.jpg") end)
-    Task.async(fn -> :timer.sleep(30_000); CatFeeder.Image.capture("#{name}03.jpg") end)
+    # name = Atom.to_string(target)
+    Task.async(fn -> :timer.sleep(2_000); CatFeeder.Image.capture("#{target}01.jpg") end)
+    Task.async(fn -> :timer.sleep(30_000); CatFeeder.Image.capture("#{target}02.jpg") end)
+    Task.async(fn -> :timer.sleep(60_000); CatFeeder.Image.capture("#{target}03.jpg") end)
   end
 
-  defp get_key("nerves_K_feeder"), do: :kisooni
-  defp get_key(_any), do: :yoki_hayangi
+  defp get_key("nerves_K_feeder"), do: "kisooni"
+  defp get_key(name) do
+    if String.match?(name, ~r/upstaris/) do
+      "kisooni"
+    else
+      "yoki_hayangi"
+    end
+  end
 
   @doc """
   Dispense the two feeder stepper motors.
@@ -92,10 +99,10 @@ defmodule CatFeeder do
     Stepper.steps(s0, opt0)
   end
 
-  defp delay do
+  defp delay(key // :delay) do
     :cat_feeder
     |> Application.get_env(:feeding, [])
-    |> Keyword.get(:delay, 2000)
+    |> Keyword.get(:key, 5000)
     |> :timer.sleep()
   end
 end

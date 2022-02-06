@@ -21,7 +21,9 @@ config :cat_feeder, :schedule, %{
   0611 => &CatFeeder.Uploader.Folders.purge_old_folders/0
 }
 
-config :cat_feeder, :feeding, delay: 3000
+config :cat_feeder, :feeding,
+  delay: 3000,
+  k_delay: 20_000
 
 # Customize non-Elixir parts of the firmware. See
 # https://hexdocs.pm/nerves/advanced-configuration.html for details.
